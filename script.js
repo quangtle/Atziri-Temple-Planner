@@ -21,7 +21,7 @@ const LOCKED_CELL_INDEX = 8 * 9 + 4; // Index 76
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
 // Place path object in locked cell
-gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 15), level: 0 };
+gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0 };
 
 // Track placement order to assign levels
 let placementOrder = [];
@@ -246,15 +246,14 @@ function applyUpgrades(index) {
             
             // Level equals the count (minimum 1)
             gridData[index].level = Math.max(1, count);
-        } else if (Array.isArray(upgradeRule)) {
-            // Original behavior: array of objects that can upgrade
+        } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
+            // List of objects that upgrade this object
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null) {
                     const adjacentObjectId = gridData[adjIndex].object.id;
-                    const adjacentUpgradeRules = UPGRADE_RULES[adjacentObjectId];
                     
                     // If the adjacent object can upgrade this object, apply upgrade
-                    if (adjacentUpgradeRules && Array.isArray(adjacentUpgradeRules) && adjacentUpgradeRules.includes(placedObject.id)) {
+                    if (upgradeRule.upgradedBy.includes(adjacentObjectId)) {
                         gridData[index].level += 1;
                     }
                 }
@@ -354,7 +353,7 @@ function toggleCell(index, cellElement) {
          }
          
          // Level is based on count of this specific object type
-         const objectLevel = selectedRoom.id === 15 ? 0 : 1;
+         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
          
          // Place object with level
          gridData[index] = { object: selectedRoom, level: objectLevel };

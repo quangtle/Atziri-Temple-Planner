@@ -1,5 +1,5 @@
 const MODIFIERS = {
-    1: {  // garrison
+    'garrison': {  // garrison
         1: [
             { name: '% increased number of Monster Packs', value: 10 }
         ],
