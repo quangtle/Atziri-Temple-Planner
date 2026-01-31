@@ -4,12 +4,15 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    flex-direction: column;
+    height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 20px;
 }
@@ -17,9 +20,11 @@ body {
 .container {
     background: white;
     border-radius: 10px;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    max-width: 850px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     width: 100%;
 }
 
@@ -27,27 +32,33 @@ body {
     display: flex;
     gap: 25px;
     align-items: flex-start;
+    flex: 1;
+    overflow: hidden;
 }
 
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     font-size: 28px;
+    flex-shrink: 0;
 }
 
 .instructions {
     text-align: center;
     color: #666;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     font-size: 14px;
+    flex-shrink: 0;
 }
 
 .controls {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-top: 15px;
     flex-wrap: wrap;
+    justify-content: center;
+    flex-shrink: 0;
     justify-content: center;
 }
 
@@ -134,27 +145,37 @@ h1 {
 .grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
+    gap: 1px;
     background-color: #ddd;
-    padding: 8px;
+    padding: 4px;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin: 0 auto 20px auto;
+    transform: rotate(45deg) scale(0.65);
+    width: fit-content;
 }
 
 .cell {
-     aspect-ratio: 1;
+     width: 80px;
+     height: 80px;
      background-color: #f5f5f5;
-     border: 2px solid #ccc;
+     border: 1px solid #ccc;
      cursor: pointer;
      display: flex;
      align-items: center;
      justify-content: center;
-     font-size: 24px;
+     font-size: 14px;
      transition: all 0.2s ease;
      border-radius: 4px;
      user-select: none;
      position: relative;
  }
+
+.cell img {
+    transform: rotate(-45deg);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
 .cell:hover {
     background-color: #e8e8e8;
@@ -218,13 +239,62 @@ h1 {
 
 .level-indicator {
      position: absolute;
-     bottom: 2px;
-     right: 2px;
+     bottom: 1px;
+     right: 1px;
      background-color: rgba(0, 0, 0, 0.7);
      color: white;
-     font-size: 12px;
+     font-size: 16px;
      font-weight: bold;
-     padding: 2px 4px;
-     border-radius: 3px;
+     padding: 1px 2px;
+     border-radius: 2px;
      font-family: 'Arial', sans-serif;
  }
+
+.modifiers-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    width: 400px;
+    height: 800px;
+    overflow-y: auto;
+}
+
+.modifiers-section h3 {
+    margin-bottom: 12px;p
+    color: #333;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modifiers-table-content {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.modifiers-table-content th,
+.modifiers-table-content td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.modifier-header {
+    background-color: #667eea;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+}
+
+.modifier-name {
+    color: #333;
+}
+
+.modifier-value {
+    color: #667eea;
+    font-weight: bold;
+    text-align: right;
+}

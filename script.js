@@ -3,6 +3,7 @@ const gridContainer = document.getElementById('grid');
 const objectGrid = document.getElementById('object-grid');
 const countDisplay = document.getElementById('count');
 const tooltip = document.getElementById('tooltip');
+const modifiersTable = document.getElementById('modifiers-table');
 
 // Function to convert number to Roman numerals (max level 3)
 function toRomanNumeral(num) {
@@ -46,14 +47,91 @@ const CONVERSION_RULES = {
     }
 };
 
+// Modifiers: object ID -> level -> array of {name, value}
+const MODIFIERS = {
+    1: {  // garrison
+        1: [
+            { name: '% increased number of Monster Packs', value: 10 }
+        ],
+        2: [
+            { name: '% increased number of Monster Packs', value: 15 },
+            { name: 'Normal Monsters have % increased Effectiveness', value: 15 }
+        ],
+        3: [
+            { name: '% increased number of Monster Packs', value: 20 },
+            { name: 'Normal Monsters have % increased Effectiveness', value: 30 }
+        ]
+    }
+};
+
 // Locked cell: bottom middle (row 8, column 4)
 const LOCKED_CELL_INDEX = 8 * 9 + 4; // Index 76
 
 // Initialize grid data - store objects with their level
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
+// Place path object in locked cell
+gridData[LOCKED_CELL_INDEX] = { object: OBJECTS.find(o => o.id === 15), level: 0 };
+
 // Track placement order to assign levels
 let placementOrder = [];
+
+// Accumulate modifiers from all placed objects
+function accumulateModifiers() {
+    const accumulated = {};
+    
+    gridData.forEach(cell => {
+        if (cell !== null) {
+            const objectModifiers = MODIFIERS[cell.object.id];
+            if (objectModifiers && objectModifiers[cell.level]) {
+                objectModifiers[cell.level].forEach(modifier => {
+                    if (!accumulated[modifier.name]) {
+                        accumulated[modifier.name] = 0;
+                    }
+                    accumulated[modifier.name] += modifier.value;
+                });
+            }
+        }
+    });
+    
+    return accumulated;
+}
+
+// Update the modifiers display table
+function updateModifiersDisplay() {
+    const accumulated = accumulateModifiers();
+    modifiersTable.innerHTML = '';
+    
+    if (Object.keys(accumulated).length === 0) {
+        modifiersTable.innerHTML = '<p style="text-align: center; color: #999; margin: 10px 0;">No modifiers</p>';
+        return;
+    }
+    
+    const table = document.createElement('table');
+    table.className = 'modifiers-table-content';
+    
+    // Add header
+    const headerRow = table.insertRow();
+    const headerName = headerRow.insertCell();
+    headerName.textContent = 'Modifier';
+    headerName.className = 'modifier-header';
+    const headerValue = headerRow.insertCell();
+    headerValue.textContent = 'Total';
+    headerValue.className = 'modifier-header';
+    
+    // Add rows for each modifier
+    Object.entries(accumulated).forEach(([name, value]) => {
+        const row = table.insertRow();
+        const nameCell = row.insertCell();
+        nameCell.textContent = name;
+        nameCell.className = 'modifier-name';
+        const valueCell = row.insertCell();
+        valueCell.textContent = value;
+        valueCell.className = 'modifier-value';
+    });
+    
+    modifiersTable.appendChild(table);
+}
 
 // Show tooltip
 function showTooltip(objectName, element) {
@@ -293,7 +371,9 @@ function initializeGrid() {
              const levelIndicator = document.createElement('div');
              levelIndicator.className = 'level-indicator';
              levelIndicator.textContent = toRomanNumeral(gridData[i].level);
-             cell.appendChild(levelIndicator);
+             if (gridData[i].level > 0) {
+                 cell.appendChild(levelIndicator);
+             }
              
              cell.classList.add('placed');
          }
@@ -324,10 +404,10 @@ function toggleCell(index, cellElement) {
          }
          
          // Level is based on count of this specific object type
-         const level = 1;
+         const objectLevel = selectedObject.id === 15 ? 0 : 1;
          
          // Place object with level
-         gridData[index] = { object: selectedObject, level: 1 };
+         gridData[index] = { object: selectedObject, level: objectLevel };
          placementOrder.push(index);
          
          // Create image element
@@ -342,8 +422,10 @@ function toggleCell(index, cellElement) {
          // Add level indicator in bottom right corner
          const levelIndicator = document.createElement('div');
          levelIndicator.className = 'level-indicator';
-         levelIndicator.textContent = toRomanNumeral(level);
-         cellElement.appendChild(levelIndicator);
+         levelIndicator.textContent = toRomanNumeral(objectLevel);
+         if (objectLevel > 0) {
+             cellElement.appendChild(levelIndicator);
+         }
          
          cellElement.classList.add('placed');
          
@@ -429,6 +511,7 @@ function clearGrid() {
 function updateCount() {
     const count = gridData.filter(cell => cell !== null).length;
     countDisplay.textContent = count;
+    updateModifiersDisplay();
 }
 
 // Toggle object visibility in selector
