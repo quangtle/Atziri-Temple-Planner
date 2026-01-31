@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9x9 Grid Object Placer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Grid Object Placer</h1>
+        <p class="instructions">Click on cells to place or remove objects</p>
+
+        <div class="main-layout">
+            <div class="object-selector">
+                <label>Select Object:</label>
+                <div class="object-grid" id="object-grid"></div>
+            </div>
+
+            <div class="right-section">
+                <div class="grid" id="grid"></div>
+                <div class="tooltip" id="tooltip"></div>
+
+                <div class="stats">
+                    <p>Objects Placed: <strong id="count">0</strong> / 81</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="clear-btn" onclick="clearGrid()">Clear All</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

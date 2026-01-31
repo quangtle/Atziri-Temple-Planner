@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g id="gem">
+    <polygon points="50,10 80,40 60,70 50,85 40,70 20,40" fill="#9C27B0" stroke="#6A1B9A" stroke-width="2"/>
+    <polygon points="50,10 80,40 60,70" fill="#BA68C8"/>
+    <polygon points="50,10 20,40 40,70" fill="#CE93D8"/>
+  </g>
+</svg>

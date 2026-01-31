@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g id="sword">
+    <rect x="42" y="10" width="16" height="70" fill="#C0C0C0" stroke="#808080" stroke-width="2"/>
+    <rect x="35" y="78" width="30" height="12" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+    <polygon points="42,10 58,10 60,5 40,5" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
+    <line x1="42" y1="20" x2="58" y2="20" stroke="#A9A9A9" stroke-width="1"/>
+    <line x1="42" y1="30" x2="58" y2="30" stroke="#A9A9A9" stroke-width="1"/>
+    <line x1="42" y1="40" x2="58" y2="40" stroke="#A9A9A9" stroke-width="1"/>
+  </g>
+</svg>
