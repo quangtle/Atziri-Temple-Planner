@@ -5,14 +5,20 @@ const countDisplay = document.getElementById('count');
 const tooltip = document.getElementById('tooltip');
 
 let OBJECTS = [
-    { name: 'star', label: '⭐', image: 'resources/images/star.svg' },
-    { name: 'box', label: '🎁', image: 'resources/images/box.svg' },
-    { name: 'gem', label: '💎', image: 'resources/images/gem.svg' },
-    { name: 'house', label: '🏠', image: 'resources/images/house.svg' },
-    { name: 'tree', label: '🌳', image: 'resources/images/tree.svg' },
-    { name: 'heart', label: '❤️', image: 'resources/images/heart.svg' },
-    { name: 'fire', label: '🔥', image: 'resources/images/fire.svg' },
-    { name: 'sword', label: '⚔️', image: 'resources/images/sword.svg' }
+    { name: 'garrison', label: '', image: 'resources/images/garrison.png', hidden: false },
+    { name: 'armoury', label: '', image: 'resources/images/armoury.png', hidden: false },
+    { name: 'spymaster', label: '', image: 'resources/images/spymaster.png', hidden: false },
+    { name: 'legion barrack', label: '', image: 'resources/images/legion_barrack.png', hidden: true },
+    { name: 'commander', label: '', image: 'resources/images/commander.png', hidden: false },
+    { name: 'synthflesh Lab', label: '', image: 'resources/images/synthflesh_lab.png', hidden: false },
+    { name: 'Transcendent Barracks', label: '', image: 'resources/images/transcendent_barrack.png', hidden: false },
+    { name: 'alchemy lab', label: '', image: 'resources/images/alchemy_lab.png', hidden: false },
+    { name: 'smithy', label: '', image: 'resources/images/smithy.png', hidden: false },
+    { name: 'sacrificial chamber', label: '', image: 'resources/images/sacrificial_chamber.png', hidden: false },
+    { name: 'thaumaturge', label: '', image: 'resources/images/thaumaturge.png', hidden: false },
+    { name: 'golem works', label: '', image: 'resources/images/golem_works.png', hidden: false },
+    { name: 'corruption chamber', label: '', image: 'resources/images/corruption_chamber.png', hidden: false },
+    { name: 'generator', label: '', image: 'resources/images/generator.png', hidden: false },
 ];
 let selectedObject = OBJECTS[0];
 
@@ -40,6 +46,11 @@ function hideTooltip() {
 function initializeObjectGrid() {
     objectGrid.innerHTML = '';
     OBJECTS.forEach((obj) => {
+        // Skip hidden objects
+        if (obj.hidden) {
+            return;
+        }
+        
         const btn = document.createElement('button');
         btn.className = 'object-btn';
         btn.dataset.object = obj.name;
@@ -163,6 +174,15 @@ function clearGrid() {
 function updateCount() {
     const count = gridData.filter(cell => cell !== null).length;
     countDisplay.textContent = count;
+}
+
+// Toggle object visibility in selector
+function toggleObjectVisibility(objectName) {
+    const obj = OBJECTS.find(o => o.name === objectName);
+    if (obj) {
+        obj.hidden = !obj.hidden;
+        initializeObjectGrid();
+    }
 }
 
 // Initialize on page load
