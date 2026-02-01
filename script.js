@@ -184,37 +184,52 @@ function applyConversions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
     
-    if (!conversionRule) {
-        return;
+    // Convert adjacent objects based on the placed object's conversion rules
+    if (conversionRule) {
+        adjacentIndices.forEach(adjIndex => {
+            if (gridData[adjIndex] !== null) {
+                const adjacentObjectId = gridData[adjIndex].object.id;
+                const convertToId = conversionRule[adjacentObjectId];
+                
+                if (convertToId) {
+                    convertObject(adjIndex, convertToId);
+                }
+            }
+        });
     }
     
-    // Check each adjacent cell for objects to convert
+    // Check if the placed object can be converted by adjacent objects
     adjacentIndices.forEach(adjIndex => {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
-            const convertToId = conversionRule[adjacentObjectId];
+            const adjacentConversionRule = CONVERSION_RULES[adjacentObjectId];
             
-            if (convertToId) {
-                // Convert the adjacent object
-                const targetObject = ROOMS.find(obj => obj.id === convertToId);
-                if (targetObject) {
-                    const level = gridData[adjIndex].level;  // Preserve level
-                    gridData[adjIndex].object = targetObject;
-                    
-                    // Update the DOM
-                    const cell = document.querySelector(`[data-index="${adjIndex}"]`);
-                    if (cell) {
-                        const imgElement = cell.querySelector('img');
-                        if (imgElement) {
-                            imgElement.src = targetObject.image;
-                            imgElement.alt = targetObject.name;
-                            imgElement.title = targetObject.name;
-                        }
-                    }
-                }
+            if (adjacentConversionRule && adjacentConversionRule[placedObjectId]) {
+                const convertToId = adjacentConversionRule[placedObjectId];
+                convertObject(index, convertToId);
             }
         }
     });
+}
+
+// Helper function to convert an object at a specific index
+function convertObject(index, convertToId) {
+    const targetObject = ROOMS.find(obj => obj.id === convertToId);
+    if (targetObject) {
+        const level = gridData[index].level;  // Preserve level
+        gridData[index].object = targetObject;
+        
+        // Update the DOM
+        const cell = document.querySelector(`[data-index="${index}"]`);
+        if (cell) {
+            const imgElement = cell.querySelector('img');
+            if (imgElement) {
+                imgElement.src = targetObject.image;
+                imgElement.alt = targetObject.name;
+                imgElement.title = targetObject.name;
+            }
+        }
+    }
 }
 
 // Apply upgrades based on all adjacent objects
