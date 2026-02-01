@@ -495,8 +495,6 @@ function initializeGrid() {
             cell.addEventListener('mouseover', () => {
                  if (gridData[i]) {
                      showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
-                 } else {
-                     showAvailableRoomsTooltip(i, cell);
                  }
              });
             cell.addEventListener('mouseout', () => hideTooltip());
@@ -508,6 +506,12 @@ function initializeGrid() {
 // Toggle object placement on cell
 function toggleCell(index, cellElement) {
      if (gridData[index] === null) {
+         // If no room is selected, show the room picker modal
+         if (selectedRoom === null) {
+             showRoomPickerModal(index, cellElement);
+             return;
+         }
+         
          // Check if placement is valid
          if (!isValidPlacement(index)) {
              return;
@@ -632,6 +636,70 @@ function toggleObjectVisibility(objectName) {
         initializeObjectGrid();
     }
 }
+
+// Room picker modal functions
+function showRoomPickerModal(cellIndex, cellElement) {
+    const placeableRooms = getPlaceableRooms(cellIndex);
+    const roomPickerGrid = document.getElementById('room-picker-grid');
+    const modal = document.getElementById('room-picker-modal');
+    
+    roomPickerGrid.innerHTML = '';
+    
+    if (placeableRooms.length === 0) {
+        roomPickerGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No compatible rooms available</p>';
+    } else {
+        placeableRooms.forEach(room => {
+            const btn = document.createElement('button');
+            btn.className = 'room-picker-btn';
+            btn.title = room.name;
+            
+            const img = document.createElement('img');
+            img.src = room.image;
+            img.alt = room.name;
+            btn.appendChild(img);
+            
+            btn.addEventListener('click', () => {
+                selectObject(room, document.querySelector(`[data-object="${room.name}"]`));
+                closeRoomPickerModal();
+                toggleCell(cellIndex, cellElement);
+            });
+            
+            roomPickerGrid.appendChild(btn);
+        });
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeRoomPickerModal() {
+    const modal = document.getElementById('room-picker-modal');
+    modal.classList.remove('show');
+}
+
+// Close modal when clicking outside of it
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('room-picker-modal');
+    if (e.target === modal) {
+        closeRoomPickerModal();
+    }
+});
+
+// Deselect room when clicking outside of grid cells and object selector
+document.addEventListener('click', (e) => {
+    // Keep selection if clicking on grid cells or object selector
+    const cellElement = e.target.closest('.cell');
+    const objectBtn = e.target.closest('.object-btn');
+    
+    if (cellElement || objectBtn) {
+        return;
+    }
+    
+    // Deselect when clicking outside these interactive areas
+    selectedRoom = null;
+    document.querySelectorAll('.object-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+});
 
 // Initialize on page load
 initializeObjectGrid();
