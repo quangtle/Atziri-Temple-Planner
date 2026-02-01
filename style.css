@@ -145,7 +145,7 @@ h1 {
 .grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    gap: 1px;
+    gap: 10px;
     background-color: #ddd;
     padding: 4px;
     border-radius: 8px;
@@ -155,8 +155,8 @@ h1 {
 }
 
 .cell {
-     width: 80px;
-     height: 80px;
+     width: 75px;
+     height: 75px;
      background-color: #f5f5f5;
      border: 1px solid #ccc;
      cursor: pointer;
@@ -239,8 +239,9 @@ h1 {
 
 .level-indicator {
      position: absolute;
-     bottom: 1px;
-     right: 1px;
+     top: 20%;
+     right: 2px;
+     transform: translateY(-50%) rotate(-45deg);
      background-color: rgba(0, 0, 0, 0.7);
      color: white;
      font-size: 16px;
