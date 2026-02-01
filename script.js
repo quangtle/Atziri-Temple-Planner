@@ -84,8 +84,102 @@ function updateModifiersDisplay() {
 }
 
 // Show tooltip
-function showTooltip(objectName, element) {
-    tooltip.textContent = objectName;
+function showTooltip(objectName, objectImage, element) {
+    tooltip.innerHTML = '';
+    
+    // Create container for image and text
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.gap = '8px';
+    
+    // Add image
+    const img = document.createElement('img');
+    img.src = objectImage;
+    img.alt = objectName;
+    img.style.width = '32px';
+    img.style.height = '32px';
+    img.style.borderRadius = '4px';
+    container.appendChild(img);
+    
+    // Add text
+    const text = document.createElement('span');
+    text.textContent = objectName;
+    container.appendChild(text);
+    
+    tooltip.appendChild(container);
+    
+    const rect = element.getBoundingClientRect();
+    tooltip.style.top = (rect.top - 10) + 'px';
+    tooltip.style.left = (rect.right + 5) + 'px';
+    tooltip.classList.add('visible');
+}
+
+// Get list of rooms that can be placed at a given index
+function getPlaceableRooms(index) {
+    const placeableRooms = [];
+    
+    // Check each room in ROOMS (excluding hidden ones)
+    ROOMS.forEach(room => {
+        if (room.hidden) return;
+        
+        // Temporarily select the room and check if placement is valid
+        const originalRoom = selectedRoom;
+        selectedRoom = room;
+        const isValid = isValidPlacement(index);
+        selectedRoom = originalRoom;
+        
+        if (isValid) {
+            placeableRooms.push(room);
+        }
+    });
+    
+    return placeableRooms;
+}
+
+// Show tooltip with available rooms for empty cell
+function showAvailableRoomsTooltip(index, element) {
+    const placeableRooms = getPlaceableRooms(index);
+    
+    tooltip.innerHTML = '';
+    
+    if (placeableRooms.length === 0) {
+        tooltip.textContent = 'No compatible rooms';
+    } else {
+        // Create container for all rooms
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '8px';
+        container.style.maxWidth = '200px';
+        
+        placeableRooms.forEach(room => {
+            const roomItem = document.createElement('div');
+            roomItem.style.display = 'flex';
+            roomItem.style.alignItems = 'center';
+            roomItem.style.gap = '8px';
+            
+            // Add image
+            const img = document.createElement('img');
+            img.src = room.image;
+            img.alt = room.name;
+            img.style.width = '24px';
+            img.style.height = '24px';
+            img.style.borderRadius = '3px';
+            roomItem.appendChild(img);
+            
+            // Add text
+            const text = document.createElement('span');
+            text.textContent = room.name;
+            text.style.fontSize = '12px';
+            roomItem.appendChild(text);
+            
+            container.appendChild(roomItem);
+        });
+        
+        tooltip.appendChild(container);
+    }
+    
     const rect = element.getBoundingClientRect();
     tooltip.style.top = (rect.top - 10) + 'px';
     tooltip.style.left = (rect.right + 5) + 'px';
@@ -124,7 +218,7 @@ function initializeObjectGrid() {
         }
         
         btn.addEventListener('click', () => selectObject(obj, btn));
-        btn.addEventListener('mouseover', () => showTooltip(obj.name, btn));
+        btn.addEventListener('mouseover', () => showTooltip(obj.name, obj.image, btn));
         btn.addEventListener('mouseout', () => hideTooltip());
         objectGrid.appendChild(btn);
     });
@@ -184,37 +278,52 @@ function applyConversions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
     
-    if (!conversionRule) {
-        return;
+    // Convert adjacent objects based on the placed object's conversion rules
+    if (conversionRule) {
+        adjacentIndices.forEach(adjIndex => {
+            if (gridData[adjIndex] !== null) {
+                const adjacentObjectId = gridData[adjIndex].object.id;
+                const convertToId = conversionRule[adjacentObjectId];
+                
+                if (convertToId) {
+                    convertObject(adjIndex, convertToId);
+                }
+            }
+        });
     }
     
-    // Check each adjacent cell for objects to convert
+    // Check if the placed object can be converted by adjacent objects
     adjacentIndices.forEach(adjIndex => {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
-            const convertToId = conversionRule[adjacentObjectId];
+            const adjacentConversionRule = CONVERSION_RULES[adjacentObjectId];
             
-            if (convertToId) {
-                // Convert the adjacent object
-                const targetObject = ROOMS.find(obj => obj.id === convertToId);
-                if (targetObject) {
-                    const level = gridData[adjIndex].level;  // Preserve level
-                    gridData[adjIndex].object = targetObject;
-                    
-                    // Update the DOM
-                    const cell = document.querySelector(`[data-index="${adjIndex}"]`);
-                    if (cell) {
-                        const imgElement = cell.querySelector('img');
-                        if (imgElement) {
-                            imgElement.src = targetObject.image;
-                            imgElement.alt = targetObject.name;
-                            imgElement.title = targetObject.name;
-                        }
-                    }
-                }
+            if (adjacentConversionRule && adjacentConversionRule[placedObjectId]) {
+                const convertToId = adjacentConversionRule[placedObjectId];
+                convertObject(index, convertToId);
             }
         }
     });
+}
+
+// Helper function to convert an object at a specific index
+function convertObject(index, convertToId) {
+    const targetObject = ROOMS.find(obj => obj.id === convertToId);
+    if (targetObject) {
+        const level = gridData[index].level;  // Preserve level
+        gridData[index].object = targetObject;
+        
+        // Update the DOM
+        const cell = document.querySelector(`[data-index="${index}"]`);
+        if (cell) {
+            const imgElement = cell.querySelector('img');
+            if (imgElement) {
+                imgElement.src = targetObject.image;
+                imgElement.alt = targetObject.name;
+                imgElement.title = targetObject.name;
+            }
+        }
+    }
 }
 
 // Apply upgrades based on all adjacent objects
@@ -271,7 +380,7 @@ function applyUpgrades(index) {
     }
 }
 
-// Check if placement is valid (adjacent to another object, locked cell, or first placement)
+// Check if placement is valid (adjacent only to related rooms or locked cell)
 function isValidPlacement(index) {
     // First object can be placed anywhere
     const hasAnyObjects = gridData.some(cell => cell !== null);
@@ -279,18 +388,68 @@ function isValidPlacement(index) {
         return true;
     }
     
-    // Check if adjacent to existing objects
-    if (hasAdjacentObject(index)) {
-        return true;
-    }
+    // Get adjacent indices
+    const adjacentIndices = getAdjacentIndices(index);
     
     // Check if adjacent to the locked cell
-    const adjacentIndices = getAdjacentIndices(index);
     if (adjacentIndices.includes(LOCKED_CELL_INDEX)) {
         return true;
     }
     
-    return false;
+    // Check if adjacent to existing objects and validate relationships
+    const adjacentRoomIds = adjacentIndices
+        .filter(adjIndex => gridData[adjIndex] !== null)
+        .map(adjIndex => gridData[adjIndex].object.id);
+    
+    if (adjacentRoomIds.length === 0) {
+        return false; // Not adjacent to any room or locked cell
+    }
+    
+    // Check if the selected room can be placed next to all adjacent rooms
+    const selectedRoomId = selectedRoom.id;
+    const allowedAdjacentRooms = PLACEMENT_RULES[selectedRoomId] || [];
+    
+    // Basic relationship check
+    if (!adjacentRoomIds.every(roomId => allowedAdjacentRooms.includes(roomId))) {
+        return false;
+    }
+    
+    // Check the special condition: only check the last placed room
+    if (placementOrder.length > 0) {
+        const lastPlacedIndex = placementOrder[placementOrder.length - 1];
+        if (gridData[lastPlacedIndex] !== null) {
+            const lastPlacedAdjacentIndices = getAdjacentIndices(lastPlacedIndex);
+            
+            // If the new placement is adjacent to the last placed room
+            if (lastPlacedAdjacentIndices.includes(index)) {
+                const targetRoomId = gridData[lastPlacedIndex].object.id;
+                const upgradeRule = UPGRADE_RULES[targetRoomId];
+                
+                // Check if the last placed room can be upgraded by multiple rooms
+                if (upgradeRule && upgradeRule.type === 'list' && upgradeRule.upgradedBy.length > 1) {
+                    // Check if the selected room is one of the upgrade options
+                    if (upgradeRule.upgradedBy.includes(selectedRoomId)) {
+                        // Get all adjacent rooms to the last placed room
+                        const targetAdjacentRoomIds = lastPlacedAdjacentIndices
+                            .filter(targetAdjIndex => gridData[targetAdjIndex] !== null)
+                            .map(targetAdjIndex => gridData[targetAdjIndex].object.id);
+                        
+                        // Count how many times the selected room already appears adjacent to the last placed room
+                        const upgraderCount = targetAdjacentRoomIds.filter(roomId => 
+                            roomId === selectedRoomId && upgradeRule.upgradedBy.includes(roomId)
+                        ).length;
+                        
+                        // If the selected room is already adjacent to the last placed room as an upgrader, reject it
+                        if (upgraderCount > 0) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 // Create grid cells
@@ -335,7 +494,7 @@ function initializeGrid() {
             });
             cell.addEventListener('mouseover', () => {
                  if (gridData[i]) {
-                     showTooltip(gridData[i].object.name, cell);
+                     showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
                  }
              });
             cell.addEventListener('mouseout', () => hideTooltip());
@@ -347,6 +506,12 @@ function initializeGrid() {
 // Toggle object placement on cell
 function toggleCell(index, cellElement) {
      if (gridData[index] === null) {
+         // If no room is selected, show the room picker modal
+         if (selectedRoom === null) {
+             showRoomPickerModal(index, cellElement);
+             return;
+         }
+         
          // Check if placement is valid
          if (!isValidPlacement(index)) {
              return;
@@ -471,6 +636,70 @@ function toggleObjectVisibility(objectName) {
         initializeObjectGrid();
     }
 }
+
+// Room picker modal functions
+function showRoomPickerModal(cellIndex, cellElement) {
+    const placeableRooms = getPlaceableRooms(cellIndex);
+    const roomPickerGrid = document.getElementById('room-picker-grid');
+    const modal = document.getElementById('room-picker-modal');
+    
+    roomPickerGrid.innerHTML = '';
+    
+    if (placeableRooms.length === 0) {
+        roomPickerGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No compatible rooms available</p>';
+    } else {
+        placeableRooms.forEach(room => {
+            const btn = document.createElement('button');
+            btn.className = 'room-picker-btn';
+            btn.title = room.name;
+            
+            const img = document.createElement('img');
+            img.src = room.image;
+            img.alt = room.name;
+            btn.appendChild(img);
+            
+            btn.addEventListener('click', () => {
+                selectObject(room, document.querySelector(`[data-object="${room.name}"]`));
+                closeRoomPickerModal();
+                toggleCell(cellIndex, cellElement);
+            });
+            
+            roomPickerGrid.appendChild(btn);
+        });
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeRoomPickerModal() {
+    const modal = document.getElementById('room-picker-modal');
+    modal.classList.remove('show');
+}
+
+// Close modal when clicking outside of it
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('room-picker-modal');
+    if (e.target === modal) {
+        closeRoomPickerModal();
+    }
+});
+
+// Deselect room when clicking outside of grid cells and object selector
+document.addEventListener('click', (e) => {
+    // Keep selection if clicking on grid cells or object selector
+    const cellElement = e.target.closest('.cell');
+    const objectBtn = e.target.closest('.object-btn');
+    
+    if (cellElement || objectBtn) {
+        return;
+    }
+    
+    // Deselect when clicking outside these interactive areas
+    selectedRoom = null;
+    document.querySelectorAll('.object-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+});
 
 // Initialize on page load
 initializeObjectGrid();

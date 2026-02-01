@@ -36,10 +36,22 @@
         </div>
     </div>
 
+    <!-- Modal for room picker -->
+    <div class="modal" id="room-picker-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select a Room</h2>
+                <button class="modal-close" onclick="closeRoomPickerModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="room-picker-grid"></div>
+        </div>
+    </div>
+
     <script src="rooms.js"></script>
     <script src="modifiers.js"></script>
     <script src="upgrade-rules.js"></script>
     <script src="conversion-rules.js"></script>
+    <script src="placement-rules.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
