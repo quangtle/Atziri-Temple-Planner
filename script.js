@@ -303,11 +303,11 @@ function isValidPlacement(index) {
     }
     
     // Check if adjacent to existing objects and validate relationships
-    const adjacentRooms = adjacentIndices
+    const adjacentRoomIds = adjacentIndices
         .filter(adjIndex => gridData[adjIndex] !== null)
         .map(adjIndex => gridData[adjIndex].object.id);
     
-    if (adjacentRooms.length === 0) {
+    if (adjacentRoomIds.length === 0) {
         return false; // Not adjacent to any room or locked cell
     }
     
@@ -315,7 +315,47 @@ function isValidPlacement(index) {
     const selectedRoomId = selectedRoom.id;
     const allowedAdjacentRooms = PLACEMENT_RULES[selectedRoomId] || [];
     
-    return adjacentRooms.every(roomId => allowedAdjacentRooms.includes(roomId));
+    // Basic relationship check
+    if (!adjacentRoomIds.every(roomId => allowedAdjacentRooms.includes(roomId))) {
+        return false;
+    }
+    
+    // Check the special condition: only check the last placed room
+    if (placementOrder.length > 0) {
+        const lastPlacedIndex = placementOrder[placementOrder.length - 1];
+        if (gridData[lastPlacedIndex] !== null) {
+            const lastPlacedAdjacentIndices = getAdjacentIndices(lastPlacedIndex);
+            
+            // If the new placement is adjacent to the last placed room
+            if (lastPlacedAdjacentIndices.includes(index)) {
+                const targetRoomId = gridData[lastPlacedIndex].object.id;
+                const upgradeRule = UPGRADE_RULES[targetRoomId];
+                
+                // Check if the last placed room can be upgraded by multiple rooms
+                if (upgradeRule && upgradeRule.type === 'list' && upgradeRule.upgradedBy.length > 1) {
+                    // Check if the selected room is one of the upgrade options
+                    if (upgradeRule.upgradedBy.includes(selectedRoomId)) {
+                        // Get all adjacent rooms to the last placed room
+                        const targetAdjacentRoomIds = lastPlacedAdjacentIndices
+                            .filter(targetAdjIndex => gridData[targetAdjIndex] !== null)
+                            .map(targetAdjIndex => gridData[targetAdjIndex].object.id);
+                        
+                        // Count how many times the selected room already appears adjacent to the last placed room
+                        const upgraderCount = targetAdjacentRoomIds.filter(roomId => 
+                            roomId === selectedRoomId && upgradeRule.upgradedBy.includes(roomId)
+                        ).length;
+                        
+                        // If the selected room is already adjacent to the last placed room as an upgrader, reject it
+                        if (upgraderCount > 0) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 // Create grid cells
