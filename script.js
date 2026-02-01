@@ -273,11 +273,6 @@ function applyConversions(index) {
         return;
     }
     
-    // Don't convert if the object has been upgraded
-    if (gridData[index].upgraded) {
-        return;
-    }
-    
     const placedObjectId = gridData[index].object.id;
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
@@ -434,6 +429,7 @@ function isValidPlacement(index) {
         const adjIndex = adjacentIndices[i];
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
+
             
             // Check if this adjacent room is directly allowed
             if (allowedAdjacentRooms.includes(adjacentObjectId)) {
