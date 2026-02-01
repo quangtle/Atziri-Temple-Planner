@@ -286,7 +286,7 @@ function applyUpgrades(index) {
     }
 }
 
-// Check if placement is valid (adjacent to another object, locked cell, or first placement)
+// Check if placement is valid (adjacent only to related rooms or locked cell)
 function isValidPlacement(index) {
     // First object can be placed anywhere
     const hasAnyObjects = gridData.some(cell => cell !== null);
@@ -294,18 +294,28 @@ function isValidPlacement(index) {
         return true;
     }
     
-    // Check if adjacent to existing objects
-    if (hasAdjacentObject(index)) {
-        return true;
-    }
+    // Get adjacent indices
+    const adjacentIndices = getAdjacentIndices(index);
     
     // Check if adjacent to the locked cell
-    const adjacentIndices = getAdjacentIndices(index);
     if (adjacentIndices.includes(LOCKED_CELL_INDEX)) {
         return true;
     }
     
-    return false;
+    // Check if adjacent to existing objects and validate relationships
+    const adjacentRooms = adjacentIndices
+        .filter(adjIndex => gridData[adjIndex] !== null)
+        .map(adjIndex => gridData[adjIndex].object.id);
+    
+    if (adjacentRooms.length === 0) {
+        return false; // Not adjacent to any room or locked cell
+    }
+    
+    // Check if the selected room can be placed next to all adjacent rooms
+    const selectedRoomId = selectedRoom.id;
+    const allowedAdjacentRooms = PLACEMENT_RULES[selectedRoomId] || [];
+    
+    return adjacentRooms.every(roomId => allowedAdjacentRooms.includes(roomId));
 }
 
 // Create grid cells
