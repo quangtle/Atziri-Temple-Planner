@@ -238,7 +238,6 @@ function selectObject(obj, btnElement) {
 // Get adjacent cell indices
 function getAdjacentIndices(index) {
     const row = Math.floor(index / GRID_SIZE);
-    const col = index % GRID_SIZE;
     
     const adjacentIndices = [
         index - GRID_SIZE,  // up
@@ -404,12 +403,6 @@ function isValidPlacement(index) {
         if (sacrificialChamberExists) {
             return false;
         }
-    }
-    
-    // First object can be placed anywhere
-    const hasAnyObjects = gridData.some(cell => cell !== null);
-    if (!hasAnyObjects) {
-        return true;
     }
     
     // Get adjacent indices
