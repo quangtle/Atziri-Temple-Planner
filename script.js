@@ -84,8 +84,102 @@ function updateModifiersDisplay() {
 }
 
 // Show tooltip
-function showTooltip(objectName, element) {
-    tooltip.textContent = objectName;
+function showTooltip(objectName, objectImage, element) {
+    tooltip.innerHTML = '';
+    
+    // Create container for image and text
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.gap = '8px';
+    
+    // Add image
+    const img = document.createElement('img');
+    img.src = objectImage;
+    img.alt = objectName;
+    img.style.width = '32px';
+    img.style.height = '32px';
+    img.style.borderRadius = '4px';
+    container.appendChild(img);
+    
+    // Add text
+    const text = document.createElement('span');
+    text.textContent = objectName;
+    container.appendChild(text);
+    
+    tooltip.appendChild(container);
+    
+    const rect = element.getBoundingClientRect();
+    tooltip.style.top = (rect.top - 10) + 'px';
+    tooltip.style.left = (rect.right + 5) + 'px';
+    tooltip.classList.add('visible');
+}
+
+// Get list of rooms that can be placed at a given index
+function getPlaceableRooms(index) {
+    const placeableRooms = [];
+    
+    // Check each room in ROOMS (excluding hidden ones)
+    ROOMS.forEach(room => {
+        if (room.hidden) return;
+        
+        // Temporarily select the room and check if placement is valid
+        const originalRoom = selectedRoom;
+        selectedRoom = room;
+        const isValid = isValidPlacement(index);
+        selectedRoom = originalRoom;
+        
+        if (isValid) {
+            placeableRooms.push(room);
+        }
+    });
+    
+    return placeableRooms;
+}
+
+// Show tooltip with available rooms for empty cell
+function showAvailableRoomsTooltip(index, element) {
+    const placeableRooms = getPlaceableRooms(index);
+    
+    tooltip.innerHTML = '';
+    
+    if (placeableRooms.length === 0) {
+        tooltip.textContent = 'No compatible rooms';
+    } else {
+        // Create container for all rooms
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '8px';
+        container.style.maxWidth = '200px';
+        
+        placeableRooms.forEach(room => {
+            const roomItem = document.createElement('div');
+            roomItem.style.display = 'flex';
+            roomItem.style.alignItems = 'center';
+            roomItem.style.gap = '8px';
+            
+            // Add image
+            const img = document.createElement('img');
+            img.src = room.image;
+            img.alt = room.name;
+            img.style.width = '24px';
+            img.style.height = '24px';
+            img.style.borderRadius = '3px';
+            roomItem.appendChild(img);
+            
+            // Add text
+            const text = document.createElement('span');
+            text.textContent = room.name;
+            text.style.fontSize = '12px';
+            roomItem.appendChild(text);
+            
+            container.appendChild(roomItem);
+        });
+        
+        tooltip.appendChild(container);
+    }
+    
     const rect = element.getBoundingClientRect();
     tooltip.style.top = (rect.top - 10) + 'px';
     tooltip.style.left = (rect.right + 5) + 'px';
@@ -124,7 +218,7 @@ function initializeObjectGrid() {
         }
         
         btn.addEventListener('click', () => selectObject(obj, btn));
-        btn.addEventListener('mouseover', () => showTooltip(obj.name, btn));
+        btn.addEventListener('mouseover', () => showTooltip(obj.name, obj.image, btn));
         btn.addEventListener('mouseout', () => hideTooltip());
         objectGrid.appendChild(btn);
     });
@@ -400,7 +494,9 @@ function initializeGrid() {
             });
             cell.addEventListener('mouseover', () => {
                  if (gridData[i]) {
-                     showTooltip(gridData[i].object.name, cell);
+                     showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
+                 } else {
+                     showAvailableRoomsTooltip(i, cell);
                  }
              });
             cell.addEventListener('mouseout', () => hideTooltip());
