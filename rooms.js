@@ -5,7 +5,7 @@ const ROOMS = [
     { id: 'legion_barrack', name: 'legion barrack', label: '', image: 'resources/images/legion_barrack.png', hidden: true },
     { id: 'commander', name: 'commander', label: '', image: 'resources/images/commander.png', hidden: false },
     { id: 'synthflesh_lab', name: 'synthflesh Lab', label: '', image: 'resources/images/synthflesh_lab.png', hidden: false },
-    { id: 'transcendent_barracks', name: 'Transcendent Barracks', label: '', image: 'resources/images/transcendent_barrack.png', hidden: false },
+    { id: 'transcendent_barracks', name: 'Transcendent Barracks', label: '', image: 'resources/images/transcendent_barrack.png', hidden: true },
     { id: 'alchemy_lab', name: 'alchemy lab', label: '', image: 'resources/images/alchemy_lab.png', hidden: false },
     { id: 'smithy', name: 'smithy', label: '', image: 'resources/images/smithy.png', hidden: false },
     { id: 'sacrificial_chamber', name: 'sacrificial chamber', label: '', image: 'resources/images/sacrificial_chamber.png', hidden: false },

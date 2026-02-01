@@ -17,11 +17,11 @@ let selectedRoom = ROOMS[0];
 // Locked cell: bottom middle (row 8, column 4)
 const LOCKED_CELL_INDEX = 8 * 9 + 4; // Index 76
 
-// Initialize grid data - store objects with their level
+// Initialize grid data - store objects with their level and upgraded status
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
 // Place path object in locked cell
-gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0 };
+gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false };
 
 // Track placement order to assign levels
 let placementOrder = [];
@@ -274,6 +274,11 @@ function applyConversions(index) {
         return;
     }
     
+    // Don't convert if the object has been upgraded
+    if (gridData[index].upgraded) {
+        return;
+    }
+    
     const placedObjectId = gridData[index].object.id;
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
@@ -281,7 +286,7 @@ function applyConversions(index) {
     // Convert adjacent objects based on the placed object's conversion rules
     if (conversionRule) {
         adjacentIndices.forEach(adjIndex => {
-            if (gridData[adjIndex] !== null) {
+            if (gridData[adjIndex] !== null && !gridData[adjIndex].upgraded) {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const convertToId = conversionRule[adjacentObjectId];
                 
@@ -337,6 +342,7 @@ function applyUpgrades(index) {
     
     // Reset level to 1 (base level)
     gridData[index].level = 1;
+    gridData[index].upgraded = false;  // Reset upgraded status
     
     const upgradeRule = UPGRADE_RULES[placedObject.id];
     
@@ -354,9 +360,13 @@ function applyUpgrades(index) {
             });
             
             // Level equals the count (minimum 1)
-            gridData[index].level = Math.max(1, count);
+            if (count > 0) {
+                gridData[index].level = count;
+                gridData[index].upgraded = true;  // Mark as upgraded
+            }
         } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
             // List of objects that upgrade this object
+            let hasUpgrade = false;
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null) {
                     const adjacentObjectId = gridData[adjIndex].object.id;
@@ -364,9 +374,13 @@ function applyUpgrades(index) {
                     // If the adjacent object can upgrade this object, apply upgrade
                     if (upgradeRule.upgradedBy.includes(adjacentObjectId)) {
                         gridData[index].level += 1;
+                        hasUpgrade = true;
                     }
                 }
             });
+            if (hasUpgrade) {
+                gridData[index].upgraded = true;  // Mark as upgraded
+            }
         }
     }
     
@@ -382,6 +396,16 @@ function applyUpgrades(index) {
 
 // Check if placement is valid (adjacent only to related rooms or locked cell)
 function isValidPlacement(index) {
+    // Check if trying to place sacrificial_chamber and one already exists
+    if (selectedRoom.id === 'sacrificial_chamber') {
+        const sacrificialChamberExists = gridData.some(cell => 
+            cell !== null && cell.object.id === 'sacrificial_chamber'
+        );
+        if (sacrificialChamberExists) {
+            return false;
+        }
+    }
+    
     // First object can be placed anywhere
     const hasAnyObjects = gridData.some(cell => cell !== null);
     if (!hasAnyObjects) {
@@ -412,6 +436,24 @@ function isValidPlacement(index) {
     // Basic relationship check
     if (!adjacentRoomIds.every(roomId => allowedAdjacentRooms.includes(roomId))) {
         return false;
+    }
+    
+    // Check if placement would violate conversion rules
+    const conversionRule = CONVERSION_RULES[selectedRoomId];
+    
+    if (conversionRule) {
+        // Check adjacent rooms that this room can convert
+        for (let adjIndex of adjacentIndices) {
+            if (gridData[adjIndex] !== null) {
+                const adjacentObjectId = gridData[adjIndex].object.id;
+                const convertToId = conversionRule[adjacentObjectId];
+                
+                // If this room should convert the adjacent room but it's already upgraded, reject placement
+                if (convertToId && gridData[adjIndex].upgraded) {
+                    return false;
+                }
+            }
+        }
     }
     
     // Check the special condition: only check the last placed room
@@ -520,8 +562,8 @@ function toggleCell(index, cellElement) {
          // Level is based on count of this specific object type
          const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
          
-         // Place object with level
-         gridData[index] = { object: selectedRoom, level: objectLevel };
+         // Place object with level and upgraded status
+         gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false };
          placementOrder.push(index);
          
          // Create image element
