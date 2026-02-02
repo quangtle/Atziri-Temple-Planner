@@ -4,6 +4,7 @@ const objectGrid = document.getElementById('object-grid');
 const countDisplay = document.getElementById('count');
 const tooltip = document.getElementById('tooltip');
 const modifiersTable = document.getElementById('modifiers-table');
+const gridConnections = document.getElementById('grid-connections');
 
 // Function to convert number to Roman numerals (max level 3)
 function toRomanNumeral(num) {
@@ -586,6 +587,7 @@ function updateCount() {
     const count = gridData.filter(cell => cell !== null).length;
     countDisplay.textContent = count;
     updateModifiersDisplay();
+    drawConnections();
 }
 
 // Room picker modal functions
@@ -651,6 +653,91 @@ document.addEventListener('click', (e) => {
         btn.classList.remove('selected');
     });
 });
+
+// Draw connections between related rooms
+function drawConnections() {
+    // Clear previous connections
+    gridConnections.innerHTML = '';
+    
+    // Set SVG dimensions to match the wrapper
+    const wrapper = gridConnections.parentElement;
+    gridConnections.setAttribute('width', wrapper.offsetWidth);
+    gridConnections.setAttribute('height', wrapper.offsetHeight);
+    
+    // For each cell with a room, check adjacent cells
+    gridData.forEach((cell, index) => {
+        if (cell === null) return;
+        
+        const adjacentIndices = getAdjacentIndices(index);
+        
+        adjacentIndices.forEach(adjIndex => {
+            if (index < adjIndex && gridData[adjIndex] !== null) { // Only draw once per pair
+                const adjacentObjectId = gridData[adjIndex].object.id;
+                const currentObjectId = cell.object.id;
+                
+                // Check if rooms are related (in placement rules)
+                const allowedRooms = PLACEMENT_RULES[currentObjectId] || [];
+                if (allowedRooms.includes(adjacentObjectId)) {
+                    drawConnectionLine(index, adjIndex);
+                }
+            }
+        });
+    });
+}
+
+// Draw a line between two cell indices, accounting for 45-degree rotation
+function drawConnectionLine(index1, index2) {
+    const cell1 = document.querySelector(`[data-index="${index1}"]`);
+    const cell2 = document.querySelector(`[data-index="${index2}"]`);
+    
+    if (!cell1 || !cell2) return;
+    
+    const rect1 = cell1.getBoundingClientRect();
+    const rect2 = cell2.getBoundingClientRect();
+    const wrapper = gridConnections.parentElement;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    
+    // Get center points of cells in SVG coordinate space
+    const center1X = rect1.left - wrapperRect.left + rect1.width / 2;
+    const center1Y = rect1.top - wrapperRect.top + rect1.height / 2;
+    const center2X = rect2.left - wrapperRect.left + rect2.width / 2;
+    const center2Y = rect2.top - wrapperRect.top + rect2.height / 2;
+    
+    // Calculate direction vector between centers
+    const dx = center2X - center1X;
+    const dy = center2Y - center1Y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance === 0) return;
+    
+    // Normalize direction vector
+    const normX = dx / distance;
+    const normY = dy / distance;
+    
+    // For a square rotated 45 degrees, use the edge distance (half the cell dimensions)
+    // This gives us the distance from center to the edge of the diamond
+    const cellWidth = rect1.width;
+    const cellHeight = rect1.height;
+    const radius = Math.max(cellWidth, cellHeight) / 2;
+    
+    // Calculate edge points on both cells
+    const x1 = center1X + normX * radius;
+    const y1 = center1Y + normY * radius;
+    const x2 = center2X - normX * radius;
+    const y2 = center2Y - normY * radius;
+    
+    // Create line element
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#667eea');
+    line.setAttribute('stroke-width', '6');
+    line.setAttribute('opacity', '0.6');
+    
+    gridConnections.appendChild(line);
+}
 
 // Initialize on page load
 initializeObjectGrid();

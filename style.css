@@ -142,6 +142,12 @@ h1 {
     position: relative;
 }
 
+.grid-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto 20px auto;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
@@ -149,9 +155,18 @@ h1 {
     background-color: #ddd;
     padding: 4px;
     border-radius: 8px;
-    margin: 0 auto 20px auto;
     transform: rotate(45deg) scale(0.65);
     width: fit-content;
+    position: relative;
+    z-index: 5;
+}
+
+.grid-connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    pointer-events: none;
 }
 
 .cell {
