@@ -262,43 +262,27 @@ h1 {
 }
 
 .modifiers-section h3 {
-    margin-bottom: 12px;p
+    margin-bottom: 12px;
     color: #333;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.modifiers-table-content {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
+.modifiers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.modifiers-table-content th,
-.modifiers-table-content td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-.modifier-header {
-    background-color: #667eea;
-    color: white;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 11px;
-}
-
-.modifier-name {
+.modifier-item {
+    margin: 0;
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.4;
     color: #333;
 }
 
-.modifier-value {
-    color: #667eea;
-    font-weight: bold;
-    text-align: right;
-}
 /* Modal styles */
 .modal {
     display: none;

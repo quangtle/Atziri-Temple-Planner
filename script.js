@@ -57,30 +57,22 @@ function updateModifiersDisplay() {
         return;
     }
     
-    const table = document.createElement('table');
-    table.className = 'modifiers-table-content';
+    const container = document.createElement('div');
+    container.className = 'modifiers-list';
     
-    // Add header
-    const headerRow = table.insertRow();
-    const headerName = headerRow.insertCell();
-    headerName.textContent = 'Modifier';
-    headerName.className = 'modifier-header';
-    const headerValue = headerRow.insertCell();
-    headerValue.textContent = 'Total';
-    headerValue.className = 'modifier-header';
-    
-    // Add rows for each modifier
+    // Add each modifier as a sentence
     Object.entries(accumulated).forEach(([name, value]) => {
-        const row = table.insertRow();
-        const nameCell = row.insertCell();
-        nameCell.textContent = name;
-        nameCell.className = 'modifier-name';
-        const valueCell = row.insertCell();
-        valueCell.textContent = value;
-        valueCell.className = 'modifier-value';
+        const modifierItem = document.createElement('p');
+        modifierItem.className = 'modifier-item';
+        
+        // Replace % with bold value and %
+        const parts = name.split('%');
+        modifierItem.innerHTML = parts[0] + '<strong>' + value + '%</strong>' + parts[1];
+        
+        container.appendChild(modifierItem);
     });
     
-    modifiersTable.appendChild(table);
+    modifiersTable.appendChild(container);
 }
 
 // Show tooltip
