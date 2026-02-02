@@ -285,7 +285,7 @@ function applyConversions(index) {
     // Convert adjacent objects based on the placed object's conversion rules
     if (conversionRule) {
         adjacentIndices.forEach(adjIndex => {
-            if (gridData[adjIndex] !== null && !gridData[adjIndex].upgraded) {
+            if (gridData[adjIndex] !== null) {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const convertToId = conversionRule[adjacentObjectId];
                 
@@ -427,63 +427,42 @@ function isValidPlacement(index) {
     const allowedAdjacentRooms = PLACEMENT_RULES[selectedRoomId] || [];
     
     // Basic relationship check
-    if (!adjacentRoomIds.every(roomId => allowedAdjacentRooms.includes(roomId))) {
-        return false;
-    }
+    // Check if each adjacent room is either allowed, or would be converted to an allowed room
+    const conversionRuleForSelected = CONVERSION_RULES[selectedRoomId];
     
-    // Check if placement would violate conversion rules
-    const conversionRule = CONVERSION_RULES[selectedRoomId];
-    
-    if (conversionRule) {
-        // Check adjacent rooms that this room can convert
-        for (let adjIndex of adjacentIndices) {
-            if (gridData[adjIndex] !== null) {
-                const adjacentObjectId = gridData[adjIndex].object.id;
-                const convertToId = conversionRule[adjacentObjectId];
-                
-                // If this room should convert the adjacent room but it's already upgraded, reject placement
-                if (convertToId && gridData[adjIndex].upgraded) {
-                    return false;
-                }
-            }
-        }
-    }
-    
-    // Check the special condition: only check the last placed room
-    if (placementOrder.length > 0) {
-        const lastPlacedIndex = placementOrder[placementOrder.length - 1];
-        if (gridData[lastPlacedIndex] !== null) {
-            const lastPlacedAdjacentIndices = getAdjacentIndices(lastPlacedIndex);
+    for (let i = 0; i < adjacentIndices.length; i++) {
+        const adjIndex = adjacentIndices[i];
+        if (gridData[adjIndex] !== null) {
+            const adjacentObjectId = gridData[adjIndex].object.id;
             
-            // If the new placement is adjacent to the last placed room
-            if (lastPlacedAdjacentIndices.includes(index)) {
-                const targetRoomId = gridData[lastPlacedIndex].object.id;
-                const upgradeRule = UPGRADE_RULES[targetRoomId];
-                
-                // Check if the last placed room can be upgraded by multiple rooms
-                if (upgradeRule && upgradeRule.type === 'list' && upgradeRule.upgradedBy.length > 1) {
-                    // Check if the selected room is one of the upgrade options
-                    if (upgradeRule.upgradedBy.includes(selectedRoomId)) {
-                        // Get all adjacent rooms to the last placed room
-                        const targetAdjacentRoomIds = lastPlacedAdjacentIndices
-                            .filter(targetAdjIndex => gridData[targetAdjIndex] !== null)
-                            .map(targetAdjIndex => gridData[targetAdjIndex].object.id);
-                        
-                        // Count how many times the selected room already appears adjacent to the last placed room
-                        const upgraderCount = targetAdjacentRoomIds.filter(roomId => 
-                            roomId === selectedRoomId && upgradeRule.upgradedBy.includes(roomId)
-                        ).length;
-                        
-                        // If the selected room is already adjacent to the last placed room as an upgrader, reject it
-                        if (upgraderCount > 0) {
-                            return false;
-                        }
-                    }
+            // Check if this adjacent room is directly allowed
+            if (allowedAdjacentRooms.includes(adjacentObjectId)) {
+                continue; // This adjacent room is allowed
+            }
+            
+            // Check if this adjacent room would be converted to an allowed room by the selected room
+            if (conversionRuleForSelected && conversionRuleForSelected[adjacentObjectId]) {
+                const convertedToId = conversionRuleForSelected[adjacentObjectId];
+                if (allowedAdjacentRooms.includes(convertedToId)) {
+                    continue; // The converted room would be allowed
                 }
             }
+            
+            // Check if the selected room would be converted by this adjacent room to satisfy its placement rules
+            const adjacentConversionRule = CONVERSION_RULES[adjacentObjectId];
+            if (adjacentConversionRule && adjacentConversionRule[selectedRoomId]) {
+                const selectedConvertedToId = adjacentConversionRule[selectedRoomId];
+                const adjacentAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
+                if (adjacentAllowedRooms.includes(selectedConvertedToId)) {
+                    continue; // The selected room would be converted to something allowed by the adjacent room
+                }
+            }
+            
+            // If we get here, this adjacent room is neither allowed nor can establish a valid relationship through conversion
+            return false;
         }
     }
-    
+
     return true;
 }
 
