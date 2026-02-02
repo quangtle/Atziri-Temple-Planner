@@ -440,7 +440,29 @@ function isValidPlacement(index) {
             if (conversionRuleForSelected && conversionRuleForSelected[adjacentObjectId]) {
                 const convertedToId = conversionRuleForSelected[adjacentObjectId];
                 if (allowedAdjacentRooms.includes(convertedToId)) {
-                    continue; // The converted room would be allowed
+                    // Check if the converted room would still be compatible with its other neighbors
+                    const adjAdjacentIndices = getAdjacentIndices(adjIndex);
+                    const convertedRoomAllowedNeighbors = PLACEMENT_RULES[convertedToId] || [];
+                    
+                    let conversionValid = true;
+                    for (let adjAdjIndex of adjAdjacentIndices) {
+                        if (adjAdjIndex !== index && gridData[adjAdjIndex] !== null) {
+                            const neighborId = gridData[adjAdjIndex].object.id;
+                            // Check if the neighbor is allowed by the converted room
+                            if (!convertedRoomAllowedNeighbors.includes(neighborId)) {
+                                // Check if the neighbor would be converted to something allowed
+                                const neighborConversionRule = CONVERSION_RULES[convertedToId];
+                                if (!neighborConversionRule || !neighborConversionRule[neighborId]) {
+                                    conversionValid = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (conversionValid) {
+                        continue; // The converted room would be allowed and compatible with other neighbors
+                    }
                 }
             }
             
