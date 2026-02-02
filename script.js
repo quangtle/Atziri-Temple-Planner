@@ -129,55 +129,6 @@ function getPlaceableRooms(index) {
     return placeableRooms;
 }
 
-// Show tooltip with available rooms for empty cell
-function showAvailableRoomsTooltip(index, element) {
-    const placeableRooms = getPlaceableRooms(index);
-    
-    tooltip.innerHTML = '';
-    
-    if (placeableRooms.length === 0) {
-        tooltip.textContent = 'No compatible rooms';
-    } else {
-        // Create container for all rooms
-        const container = document.createElement('div');
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.gap = '8px';
-        container.style.maxWidth = '200px';
-        
-        placeableRooms.forEach(room => {
-            const roomItem = document.createElement('div');
-            roomItem.style.display = 'flex';
-            roomItem.style.alignItems = 'center';
-            roomItem.style.gap = '8px';
-            
-            // Add image
-            const img = document.createElement('img');
-            img.src = room.image;
-            img.alt = room.name;
-            img.style.width = '24px';
-            img.style.height = '24px';
-            img.style.borderRadius = '3px';
-            roomItem.appendChild(img);
-            
-            // Add text
-            const text = document.createElement('span');
-            text.textContent = room.name;
-            text.style.fontSize = '12px';
-            roomItem.appendChild(text);
-            
-            container.appendChild(roomItem);
-        });
-        
-        tooltip.appendChild(container);
-    }
-    
-    const rect = element.getBoundingClientRect();
-    tooltip.style.top = (rect.top - 10) + 'px';
-    tooltip.style.left = (rect.right + 5) + 'px';
-    tooltip.classList.add('visible');
-}
-
 // Hide tooltip
 function hideTooltip() {
     tooltip.classList.remove('visible');
@@ -252,11 +203,6 @@ function getAdjacentIndices(index) {
         
         return true;
     });
-}
-
-// Check if a cell has any adjacent objects
-function hasAdjacentObject(index) {
-    return getAdjacentIndices(index).some(adjIndex => gridData[adjIndex] !== null);
 }
 
 // Apply conversions when an object is placed
@@ -625,16 +571,6 @@ function clearCell(index, cellElement) {
      }
  }
 
-// Update all level indicators after removal
-function updateAllLevels() {
-     // Recalculate upgrades for all objects on the grid
-     gridData.forEach((cell, index) => {
-         if (cell !== null) {
-             applyUpgrades(index);
-         }
-     });
- }
-
 // Clear all objects from grid
 function clearGrid() {
     if (confirm('Are you sure you want to clear all objects?')) {
@@ -650,15 +586,6 @@ function updateCount() {
     const count = gridData.filter(cell => cell !== null).length;
     countDisplay.textContent = count;
     updateModifiersDisplay();
-}
-
-// Toggle object visibility in selector
-function toggleObjectVisibility(objectName) {
-    const obj = OBJECTS.find(o => o.name === objectName);
-    if (obj) {
-        obj.hidden = !obj.hidden;
-        initializeObjectGrid();
-    }
 }
 
 // Room picker modal functions
