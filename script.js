@@ -118,6 +118,170 @@ function getPlaceableRooms(index) {
     return placeableRooms;
 }
 
+// Get the display name for a room by its ID
+function getRoomDisplayName(roomId) {
+    const room = ROOMS.find(r => r.id === roomId);
+    return room ? room.name : roomId;
+}
+
+// Get the image URL for a room by its ID
+function getRoomImage(roomId) {
+    const room = ROOMS.find(r => r.id === roomId);
+    return room ? room.image : '';
+}
+
+// Check if two rooms can be placed adjacent to each other
+function canBePlacedAdjacent(roomId1, roomId2) {
+    const allowedRooms = PLACEMENT_RULES[roomId1] || [];
+    return allowedRooms.includes(roomId2);
+}
+
+// Get rooms that can upgrade a given room (from UPGRADE_RULES), filtered by placement rules
+function getRoomsThatUpgrade(roomId) {
+    const upgradeRule = UPGRADE_RULES[roomId];
+    if (!upgradeRule) return [];
+    
+    let upgradingRooms = [];
+    
+    if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
+        upgradingRooms = upgradeRule.upgradedBy;
+    } else if (upgradeRule.type === 'count' && Array.isArray(upgradeRule.objectIds)) {
+        upgradingRooms = upgradeRule.objectIds;
+    }
+    
+    // Filter to only include rooms that can be placed adjacent according to placement rules
+    return upgradingRooms.filter(upRoomId => canBePlacedAdjacent(roomId, upRoomId));
+}
+
+// Get rooms that this room can upgrade (reverse lookup in UPGRADE_RULES), filtered by placement rules
+function getRoomsThisUpgrades(roomId) {
+    const roomsItUpgrades = [];
+    
+    for (const [targetRoomId, rule] of Object.entries(UPGRADE_RULES)) {
+        if (rule.type === 'list' && Array.isArray(rule.upgradedBy)) {
+            if (rule.upgradedBy.includes(roomId)) {
+                // Only include if this room can be placed adjacent to the target room
+                if (canBePlacedAdjacent(roomId, targetRoomId)) {
+                    roomsItUpgrades.push(targetRoomId);
+                }
+            }
+        } else if (rule.type === 'count' && Array.isArray(rule.objectIds)) {
+            if (rule.objectIds.includes(roomId)) {
+                // Only include if this room can be placed adjacent to the target room
+                if (canBePlacedAdjacent(roomId, targetRoomId)) {
+                    roomsItUpgrades.push(targetRoomId);
+                }
+            }
+        }
+    }
+    
+    return roomsItUpgrades;
+}
+
+// Show tooltip with upgrade information for placed rooms
+function showPlacedRoomTooltip(objectName, objectImage, element, roomId) {
+    tooltip.innerHTML = '';
+    
+    const container = document.createElement('div');
+    container.className = 'tooltip-container';
+    
+    // Room header with image and name
+    const header = document.createElement('div');
+    header.className = 'tooltip-header';
+    
+    const img = document.createElement('img');
+    img.src = objectImage;
+    img.alt = objectName;
+    img.className = 'tooltip-room-image';
+    header.appendChild(img);
+    
+    const text = document.createElement('span');
+    text.className = 'tooltip-room-name';
+    text.textContent = objectName;
+    header.appendChild(text);
+    
+    container.appendChild(header);
+    
+    // Get upgrade relationships
+    const upgradedBy = getRoomsThatUpgrade(roomId);
+    const upgrades = getRoomsThisUpgrades(roomId);
+    
+    // Show rooms that upgrade this room
+    if (upgradedBy.length > 0) {
+        const upgradeBySection = document.createElement('div');
+        upgradeBySection.className = 'tooltip-section';
+        
+        const upgradeByLabel = document.createElement('div');
+        upgradeByLabel.className = 'tooltip-section-label';
+        upgradeByLabel.textContent = 'Upgraded by:';
+        upgradeBySection.appendChild(upgradeByLabel);
+        
+        const upgradeByList = document.createElement('div');
+        upgradeByList.className = 'tooltip-room-list';
+        
+        upgradedBy.forEach(upRoomId => {
+            const roomItem = document.createElement('div');
+            roomItem.className = 'tooltip-room-item';
+            
+            const roomImg = document.createElement('img');
+            roomImg.src = getRoomImage(upRoomId);
+            roomImg.alt = getRoomDisplayName(upRoomId);
+            roomImg.className = 'tooltip-small-image';
+            roomItem.appendChild(roomImg);
+            
+            const roomName = document.createElement('span');
+            roomName.textContent = getRoomDisplayName(upRoomId);
+            roomItem.appendChild(roomName);
+            
+            upgradeByList.appendChild(roomItem);
+        });
+        
+        upgradeBySection.appendChild(upgradeByList);
+        container.appendChild(upgradeBySection);
+    }
+    
+    // Show rooms this room upgrades
+    if (upgrades.length > 0) {
+        const upgradesSection = document.createElement('div');
+        upgradesSection.className = 'tooltip-section';
+        
+        const upgradesLabel = document.createElement('div');
+        upgradesLabel.className = 'tooltip-section-label';
+        upgradesLabel.textContent = 'Upgrades:';
+        upgradesSection.appendChild(upgradesLabel);
+        
+        const upgradesList = document.createElement('div');
+        upgradesList.className = 'tooltip-room-list';
+        
+        upgrades.forEach(upRoomId => {
+            const roomItem = document.createElement('div');
+            roomItem.className = 'tooltip-room-item';
+            
+            const roomImg = document.createElement('img');
+            roomImg.src = getRoomImage(upRoomId);
+            roomImg.alt = getRoomDisplayName(upRoomId);
+            roomImg.className = 'tooltip-small-image';
+            roomItem.appendChild(roomImg);
+            
+            const roomName = document.createElement('span');
+            roomName.textContent = getRoomDisplayName(upRoomId);
+            roomItem.appendChild(roomName);
+            
+            upgradesList.appendChild(roomItem);
+        });
+        
+        upgradesSection.appendChild(upgradesList);
+        container.appendChild(upgradesSection);
+    }
+    
+    tooltip.appendChild(container);
+    
+    const rect = element.getBoundingClientRect();
+    tooltip.style.top = (rect.top - 10) + 'px';
+    tooltip.style.left = (rect.right + 5) + 'px';
+    tooltip.classList.add('visible');
+}
+
 // Hide tooltip
 function hideTooltip() {
     tooltip.classList.remove('visible');
@@ -604,7 +768,7 @@ function initializeGrid() {
             });
             cell.addEventListener('mouseover', () => {
                 if (gridData[i]) {
-                    showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
+                    showPlacedRoomTooltip(gridData[i].object.name, gridData[i].object.image, cell, gridData[i].object.id);
                 }
             });
             cell.addEventListener('mouseout', () => hideTooltip());

@@ -249,11 +249,74 @@ h1 {
     transition: opacity 0.2s ease;
     text-transform: capitalize;
     z-index: 10;
+    max-width: 280px;
 }
 
 .tooltip.visible {
      opacity: 1;
  }
+
+/* Tooltip container styles */
+.tooltip-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltip-room-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+}
+
+.tooltip-room-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.tooltip-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 8px;
+}
+
+.tooltip-section-label {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tooltip-room-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltip-room-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+}
+
+.tooltip-small-image {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+}
+
+.tooltip-room-item span {
+    font-size: 12px;
+    font-weight: 500;
+}
 
 .level-indicator {
      position: absolute;
