@@ -15,5 +15,5 @@ const PLACEMENT_RULES = {
     'corruption_chamber': ['thaumaturge', 'sacrificial_chamber', 'path'],
     'generator': ['thaumaturge', 'sacrificial_chamber', 'path'],
     'flesh_surgeon': ['synthflesh_lab', 'path'],
-    'path': ['path']
+    'path': ['path', 'garrison', 'armoury', 'spymaster', 'legion_barrack', 'commander', 'synthflesh_lab', 'transcendent_barracks', 'alchemy_lab', 'smithy', 'sacrificial_chamber', 'thaumaturge', 'golem_works', 'corruption_chamber', 'generator', 'flesh_surgeon']
 };
