@@ -470,6 +470,9 @@ function initializeGrid() {
              }
              
              cell.classList.add('placed');
+             
+             // Apply chain color
+             applyChainColorToCell(i, cell);
          }
         
         if (i !== LOCKED_CELL_INDEX) {
@@ -486,6 +489,21 @@ function initializeGrid() {
             cell.addEventListener('mouseout', () => hideTooltip());
         }
         gridContainer.appendChild(cell);
+    }
+}
+
+// Apply chain color to a cell based on its root path
+function applyChainColorToCell(index, cellElement) {
+    // Skip coloring path rooms
+    if (gridData[index] && gridData[index].object.id === 'path') {
+        return;
+    }
+    
+    const rootPath = traceChainToPath(index);
+    if (rootPath !== null) {
+        const chainColor = getChainColor(rootPath);
+        cellElement.style.backgroundColor = chainColor.border;
+        cellElement.style.borderColor = chainColor.header;
     }
 }
 
@@ -529,6 +547,9 @@ function toggleCell(index, cellElement) {
          
          cellElement.classList.add('placed');
          
+         // Apply chain color to this cell
+         applyChainColorToCell(index, cellElement);
+         
          // Apply conversions first (before upgrades)
          applyConversions(index);
          
@@ -551,6 +572,10 @@ function toggleCell(index, cellElement) {
          gridData[index] = null;
          cellElement.innerHTML = '';
          cellElement.classList.remove('placed');
+         
+         // Reset cell color
+         cellElement.style.backgroundColor = '';
+         cellElement.style.borderColor = '';
          
          // Recalculate upgrades for all adjacent objects
          const adjacentIndices = getAdjacentIndices(index);
@@ -575,6 +600,10 @@ function clearCell(index, cellElement) {
          cellElement.innerHTML = '';
          cellElement.classList.remove('placed');
          
+         // Reset cell color
+         cellElement.style.backgroundColor = '';
+         cellElement.style.borderColor = '';
+         
          // Recalculate upgrades for all adjacent objects
          const adjacentIndices = getAdjacentIndices(index);
          adjacentIndices.forEach(adjIndex => {
@@ -592,6 +621,9 @@ function clearGrid() {
     if (confirm('Are you sure you want to clear all objects?')) {
         gridData.fill(null);
         placementOrder = [];
+        // Reset chain colors
+        chainColorMap.clear();
+        nextColorIndex = 0;
         initializeGrid();
         updateCount();
     }
@@ -605,6 +637,175 @@ function updateCount() {
     drawConnections();
 }
 
+// Get adjacent paths for a cell index
+function getAdjacentPaths(index) {
+    const adjacentIndices = getAdjacentIndices(index);
+    const paths = [];
+    
+    adjacentIndices.forEach(adjIndex => {
+        if (adjIndex === LOCKED_CELL_INDEX) {
+            paths.push({ index: adjIndex, id: 'path', name: 'Locked Path' });
+        } else if (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path') {
+            paths.push({ index: adjIndex, id: 'path', name: `Path (${adjIndex})` });
+        }
+    });
+    
+    return paths;
+}
+
+// Trace back from a cell to find its root path by following the chain
+function traceChainToPath(startIndex, visited = new Set()) {
+    if (visited.has(startIndex)) {
+        return null; // Avoid infinite loops
+    }
+    visited.add(startIndex);
+    
+    // If this is the locked cell or a path, we found the root
+    if (startIndex === LOCKED_CELL_INDEX) {
+        return LOCKED_CELL_INDEX;
+    }
+    
+    if (gridData[startIndex] === null) {
+        return null;
+    }
+    
+    if (gridData[startIndex].object.id === 'path') {
+        return startIndex;
+    }
+    
+    // Otherwise, check adjacent cells to trace back
+    const adjacentIndices = getAdjacentIndices(startIndex);
+    const currentRoomId = gridData[startIndex].object.id;
+    
+    for (const adjIndex of adjacentIndices) {
+        // Check if adjacent to locked cell
+        if (adjIndex === LOCKED_CELL_INDEX) {
+            return LOCKED_CELL_INDEX;
+        }
+        
+        if (gridData[adjIndex] === null) {
+            continue;
+        }
+        
+        const adjRoomId = gridData[adjIndex].object.id;
+        
+        // Check if the adjacent room can connect to current room (valid chain)
+        const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
+        if (adjAllowedRooms.includes(currentRoomId)) {
+            const rootPath = traceChainToPath(adjIndex, visited);
+            if (rootPath !== null) {
+                return rootPath;
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Group rooms by which chain(s) they can extend from
+function groupRoomsByChain(cellIndex, placeableRooms) {
+    const adjacentIndices = getAdjacentIndices(cellIndex);
+    
+    // Find all adjacent cells that have rooms (including paths and locked cell)
+    const adjacentSources = []; // { index, roomId, rootPath }
+    
+    adjacentIndices.forEach(adjIndex => {
+        if (adjIndex === LOCKED_CELL_INDEX) {
+            adjacentSources.push({
+                index: adjIndex,
+                roomId: 'path',
+                rootPath: LOCKED_CELL_INDEX
+            });
+        } else if (gridData[adjIndex] !== null) {
+            const roomId = gridData[adjIndex].object.id;
+            const rootPath = traceChainToPath(adjIndex);
+            if (rootPath !== null) {
+                adjacentSources.push({
+                    index: adjIndex,
+                    roomId: roomId,
+                    rootPath: rootPath
+                });
+            }
+        }
+    });
+    
+    // For each placeable room, determine which root paths it can extend from
+    const roomToChainsMap = new Map(); // room -> set of root path indices
+    
+    placeableRooms.forEach(room => {
+        const chainsForRoom = new Set();
+        
+        // Check which adjacent sources allow this room
+        adjacentSources.forEach(({ index: adjIndex, roomId, rootPath }) => {
+            const allowedRooms = PLACEMENT_RULES[roomId] || [];
+            if (allowedRooms.includes(room.id)) {
+                chainsForRoom.add(rootPath);
+            }
+        });
+        
+        if (chainsForRoom.size > 0) {
+            roomToChainsMap.set(room, chainsForRoom);
+        }
+    });
+    
+    // Group rooms: single-chain rooms grouped by root path, multi-chain rooms in separate group
+    const singleChainGroups = new Map(); // rootPathIndex -> rooms[]
+    const multiChainRooms = []; // rooms that can extend multiple chains
+    
+    placeableRooms.forEach(room => {
+        const chains = roomToChainsMap.get(room);
+        
+        if (!chains || chains.size === 0) {
+            // Should not happen if room is placeable, but handle gracefully
+            // Put in first available group
+        } else if (chains.size === 1) {
+            // Room extends from exactly one chain
+            const rootPath = chains.values().next().value;
+            if (!singleChainGroups.has(rootPath)) {
+                singleChainGroups.set(rootPath, []);
+            }
+            singleChainGroups.get(rootPath).push(room);
+        } else {
+            // Room can extend from multiple chains
+            multiChainRooms.push(room);
+        }
+    });
+    
+    return { singleChainGroups, multiChainRooms };
+}
+
+// Chain color palette
+const CHAIN_COLORS = [
+    { bg: '#e3f2fd', border: '#2196f3', header: '#1565c0' }, // Blue
+    { bg: '#f3e5f5', border: '#9c27b0', header: '#7b1fa2' }, // Purple
+    { bg: '#e8f5e9', border: '#4caf50', header: '#2e7d32' }, // Green
+    { bg: '#fff3e0', border: '#ff9800', header: '#e65100' }, // Orange
+    { bg: '#fce4ec', border: '#e91e63', header: '#c2185b' }, // Pink
+    { bg: '#e0f7fa', border: '#00bcd4', header: '#00838f' }, // Cyan
+    { bg: '#fff8e1', border: '#ffc107', header: '#ff8f00' }, // Amber
+    { bg: '#f1f8e9', border: '#8bc34a', header: '#558b2f' }, // Light Green
+];
+
+// Map to store assigned colors for each root path
+const chainColorMap = new Map();
+let nextColorIndex = 0;
+
+// Get or assign a color for a chain's root path
+function getChainColor(rootPathIndex) {
+    if (!chainColorMap.has(rootPathIndex)) {
+        chainColorMap.set(rootPathIndex, CHAIN_COLORS[nextColorIndex % CHAIN_COLORS.length]);
+        nextColorIndex++;
+    }
+    return chainColorMap.get(rootPathIndex);
+}
+
+// Get display name for a chain's root path
+function getChainDisplayName(rootPathIndex) {
+    const row = Math.floor(rootPathIndex / GRID_SIZE);
+    const col = rootPathIndex % GRID_SIZE;
+    return `Path (${row}, ${col})`;
+}
+
 // Room picker modal functions
 function showRoomPickerModal(cellIndex, cellElement) {
     const placeableRooms = getPlaceableRooms(cellIndex);
@@ -616,7 +817,10 @@ function showRoomPickerModal(cellIndex, cellElement) {
     if (placeableRooms.length === 0) {
         roomPickerGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No compatible rooms available</p>';
     } else {
-        placeableRooms.forEach(room => {
+        const { singleChainGroups, multiChainRooms } = groupRoomsByChain(cellIndex, placeableRooms);
+        
+        // Create room button helper function
+        const createRoomButton = (room) => {
             const btn = document.createElement('button');
             btn.className = 'room-picker-btn';
             btn.title = room.name;
@@ -632,8 +836,57 @@ function showRoomPickerModal(cellIndex, cellElement) {
                 toggleCell(cellIndex, cellElement);
             });
             
-            roomPickerGrid.appendChild(btn);
+            return btn;
+        };
+        
+        // Render single-chain groups
+        singleChainGroups.forEach((rooms, rootPathIndex) => {
+            if (rooms.length > 0) {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'room-picker-group';
+                
+                // Apply chain color
+                const chainColor = getChainColor(rootPathIndex);
+                groupDiv.style.backgroundColor = chainColor.bg;
+                groupDiv.style.borderColor = chainColor.border;
+                
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'room-picker-group-header';
+                groupHeader.textContent = getChainDisplayName(rootPathIndex);
+                groupHeader.style.borderBottomColor = chainColor.border;
+                groupHeader.style.color = chainColor.header;
+                groupDiv.appendChild(groupHeader);
+                
+                const groupContent = document.createElement('div');
+                groupContent.className = 'room-picker-group-content';
+                rooms.forEach(room => {
+                    groupContent.appendChild(createRoomButton(room));
+                });
+                groupDiv.appendChild(groupContent);
+                
+                roomPickerGrid.appendChild(groupDiv);
+            }
         });
+        
+        // Render multi-chain rooms group
+        if (multiChainRooms.length > 0) {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'room-picker-group room-picker-group-multi';
+            
+            const groupHeader = document.createElement('div');
+            groupHeader.className = 'room-picker-group-header';
+            groupHeader.textContent = 'Merge';
+            groupDiv.appendChild(groupHeader);
+            
+            const groupContent = document.createElement('div');
+            groupContent.className = 'room-picker-group-content';
+            multiChainRooms.forEach(room => {
+                groupContent.appendChild(createRoomButton(room));
+            });
+            groupDiv.appendChild(groupContent);
+            
+            roomPickerGrid.appendChild(groupDiv);
+        }
     }
     
     modal.classList.add('show');

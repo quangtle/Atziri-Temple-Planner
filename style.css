@@ -361,8 +361,8 @@ h1 {
 }
 
 .modal-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -390,4 +390,43 @@ h1 {
     height: 100%;
     object-fit: cover;
     border-radius: 4px;
+}
+
+/* Room picker group styles */
+.room-picker-group {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 2px solid #e0e0e0;
+}
+
+.room-picker-group-header {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #667eea;
+    text-transform: capitalize;
+}
+
+.room-picker-group-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+}
+
+/* Merge group - special gradient styling */
+.room-picker-group-multi {
+    background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 50%, #e8f5e9 100%);
+    border-color: #9e9e9e;
+    border-width: 2px;
+    border-style: dashed;
+}
+
+.room-picker-group-multi .room-picker-group-header {
+    border-bottom-color: #9e9e9e;
+    color: #616161;
 }
