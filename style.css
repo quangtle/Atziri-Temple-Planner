@@ -38,18 +38,20 @@ body {
 
 h1 {
     text-align: center;
-    color: #333;
+    color: #ffffff;
     margin-bottom: 5px;
     font-size: 28px;
     flex-shrink: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .instructions {
     text-align: center;
-    color: #666;
+    color: #ffffff;
     margin-bottom: 15px;
     font-size: 14px;
     flex-shrink: 0;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .controls {
@@ -91,11 +93,12 @@ h1 {
 
 .object-selector label {
     font-weight: 600;
-    color: #333;
+    color: #ffffff;
     display: block;
     margin-bottom: 10px;
     text-align: center;
     font-size: 13px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .object-grid {
