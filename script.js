@@ -168,26 +168,31 @@ function selectObject(obj, btnElement) {
 // Get adjacent cell indices
 function getAdjacentIndices(index) {
     const row = Math.floor(index / GRID_SIZE);
+    const col = index % GRID_SIZE;
     
-    const adjacentIndices = [
-        index - GRID_SIZE,
-        index + GRID_SIZE,
-        index - 1,
-        index + 1
-    ];
+    const adjacentIndices = [];
     
-    return adjacentIndices.filter(adjIndex => {
-        if (adjIndex < 0 || adjIndex >= GRID_SIZE * GRID_SIZE) {
-            return false;
-        }
-        
-        const adjRow = Math.floor(adjIndex / GRID_SIZE);
-        if (Math.abs(row - adjRow) > 1) {
-            return false;
-        }
-        
-        return true;
-    });
+    // Up
+    if (row > 0) {
+        adjacentIndices.push(index - GRID_SIZE);
+    }
+    
+    // Down
+    if (row < GRID_SIZE - 1) {
+        adjacentIndices.push(index + GRID_SIZE);
+    }
+    
+    // Left
+    if (col > 0) {
+        adjacentIndices.push(index - 1);
+    }
+    
+    // Right
+    if (col < GRID_SIZE - 1) {
+        adjacentIndices.push(index + 1);
+    }
+    
+    return adjacentIndices;
 }
 
 // Apply conversions when an object is placed
