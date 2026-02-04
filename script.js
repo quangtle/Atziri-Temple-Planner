@@ -338,6 +338,31 @@ function wouldConversionBreakChain(roomIndex, convertedToId) {
     return false;
 }
 
+// Check if placing a room would cause conversions that break ANY chain
+function wouldPlacementBreakAnyChain(index, roomId) {
+    const conversionRule = CONVERSION_RULES[roomId];
+    if (!conversionRule) {
+        return false;
+    }
+    
+    const adjacentIndices = getAdjacentIndices(index);
+    
+    for (const adjIndex of adjacentIndices) {
+        if (gridData[adjIndex] !== null) {
+            const adjacentObjectId = gridData[adjIndex].object.id;
+            const convertedToId = conversionRule[adjacentObjectId];
+            
+            if (convertedToId) {
+                if (wouldConversionBreakChain(adjIndex, convertedToId)) {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
 // Get all valid rooms that can be placed at an index based on adjacent chains
 function getValidChainExtensions(index) {
     const adjacentIndices = getAdjacentIndices(index);
@@ -363,9 +388,7 @@ function getValidChainExtensions(index) {
                         const convertingAllowedRooms = PLACEMENT_RULES[convertingRoomId] || [];
                         
                         if (convertedAllowedRooms.includes(convertingRoomId) && convertingAllowedRooms.includes(convertedToId)) {
-                            if (!wouldConversionBreakChain(adjIndex, convertedToId)) {
-                                validRooms.add(convertingRoomId);
-                            }
+                            validRooms.add(convertingRoomId);
                         }
                     }
                 }
@@ -380,7 +403,15 @@ function getValidChainExtensions(index) {
         validRooms.add('path');
     }
     
-    return validRooms;
+    // Filter out rooms that would break any chain when placed
+    const safeRooms = new Set();
+    for (const roomId of validRooms) {
+        if (!wouldPlacementBreakAnyChain(index, roomId)) {
+            safeRooms.add(roomId);
+        }
+    }
+    
+    return safeRooms;
 }
 
 // Check if placement is valid
@@ -404,9 +435,14 @@ function isValidPlacement(index) {
         return false;
     }
     
-    const validExtensions = getValidChainExtensions(index);
-    
     const selectedRoomId = selectedRoom.id;
+    
+    // Check if placing this room would break any existing chain via conversions
+    if (wouldPlacementBreakAnyChain(index, selectedRoomId)) {
+        return false;
+    }
+    
+    const validExtensions = getValidChainExtensions(index);
     
     if (validExtensions.has(selectedRoomId)) {
         return true;
@@ -436,8 +472,7 @@ function isValidPlacement(index) {
                     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
                     const selectedAllowedRooms = PLACEMENT_RULES[selectedRoomId] || [];
                     if (convertedAllowedRooms.includes(selectedRoomId) && 
-                        selectedAllowedRooms.includes(convertedToId) &&
-                        !wouldConversionBreakChain(adjIndex, convertedToId)) {
+                        selectedAllowedRooms.includes(convertedToId)) {
                         return true;
                     }
                 }
