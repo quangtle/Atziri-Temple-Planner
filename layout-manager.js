@@ -20,7 +20,8 @@ function serializeGridData() {
         return {
             objectId: cell.object.id,
             level: cell.level,
-            upgraded: cell.upgraded
+            upgraded: cell.upgraded,
+            convertedBy: cell.convertedBy || null
         };
     });
 }
@@ -34,7 +35,8 @@ function deserializeGridData(serialized) {
         return {
             object: room,
             level: cell.level,
-            upgraded: cell.upgraded
+            upgraded: cell.upgraded,
+            convertedBy: cell.convertedBy || null
         };
     });
 }

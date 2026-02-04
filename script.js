@@ -18,7 +18,7 @@ const LOCKED_CELL_INDEX = 8 * 9 + 4;
 
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
-gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false };
+gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false, convertedBy: null };
 
 let placementOrder = [];
 
@@ -200,6 +200,7 @@ function applyConversions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
     
+    // Placed room converts adjacent rooms
     if (conversionRule) {
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
@@ -207,12 +208,13 @@ function applyConversions(index) {
                 const convertToId = conversionRule[adjacentObjectId];
                 
                 if (convertToId) {
-                    convertObject(adjIndex, convertToId);
+                    convertObject(adjIndex, convertToId, placedObjectId);
                 }
             }
         });
     }
     
+    // Adjacent rooms convert the placed room
     adjacentIndices.forEach(adjIndex => {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
@@ -220,18 +222,19 @@ function applyConversions(index) {
             
             if (adjacentConversionRule && adjacentConversionRule[placedObjectId]) {
                 const convertToId = adjacentConversionRule[placedObjectId];
-                convertObject(index, convertToId);
+                convertObject(index, convertToId, adjacentObjectId);
             }
         }
     });
 }
 
 // Convert an object at a specific index
-function convertObject(index, convertToId) {
+function convertObject(index, convertToId, convertedByRoomId) {
     const targetObject = ROOMS.find(obj => obj.id === convertToId);
     if (targetObject) {
         const level = gridData[index].level;
         gridData[index].object = targetObject;
+        gridData[index].convertedBy = convertedByRoomId;  // Track which room type caused the conversion
         
         const cell = document.querySelector(`[data-index="${index}"]`);
         if (cell) {
@@ -368,6 +371,9 @@ function getValidChainExtensions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const validRooms = new Set();
     
+    // Track which room types are blocked due to adjacent converted rooms
+    const blockedRoomTypes = new Set();
+    
     // Check if there's an adjacent path (for generator placement rule)
     const hasAdjacentPath = adjacentIndices.some(adjIndex => 
         adjIndex === LOCKED_CELL_INDEX || 
@@ -381,6 +387,11 @@ function getValidChainExtensions(index) {
                 roomId = 'path';
             } else {
                 roomId = gridData[adjIndex].object.id;
+                
+                // If this room was converted, block the room type that converted it
+                if (gridData[adjIndex].convertedBy) {
+                    blockedRoomTypes.add(gridData[adjIndex].convertedBy);
+                }
             }
             
             // Add rooms that can directly extend from the adjacent room
@@ -424,6 +435,11 @@ function getValidChainExtensions(index) {
     // Generator can only be placed adjacent to a path
     if (!hasAdjacentPath) {
         validRooms.delete('generator');
+    }
+    
+    // Remove blocked room types (rooms that converted an adjacent room)
+    for (const blockedType of blockedRoomTypes) {
+        validRooms.delete(blockedType);
     }
     
     // Filter out rooms that would break any chain when placed
@@ -596,7 +612,7 @@ function toggleCell(index, cellElement) {
         
         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
         
-        gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false };
+        gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null };
         placementOrder.push(index);
         
         const imgElement = document.createElement('img');
@@ -772,12 +788,14 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             });
         } else if (gridData[adjIndex] !== null) {
             const roomId = gridData[adjIndex].object.id;
+            const convertedBy = gridData[adjIndex].convertedBy;
             const rootPath = traceChainToPath(adjIndex);
             if (rootPath !== null) {
                 adjacentSources.push({
                     index: adjIndex,
                     roomId: roomId,
-                    rootPath: rootPath
+                    rootPath: rootPath,
+                    convertedBy: convertedBy
                 });
             }
         }
@@ -788,7 +806,12 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
     placeableRooms.forEach(room => {
         const chainsForRoom = new Set();
         
-        adjacentSources.forEach(({ index: adjIndex, roomId, rootPath }) => {
+        adjacentSources.forEach(({ index: adjIndex, roomId, rootPath, convertedBy }) => {
+            // Skip if this room type is the one that converted the adjacent room
+            if (convertedBy === room.id) {
+                return;
+            }
+            
             const allowedRooms = PLACEMENT_RULES[roomId] || [];
             if (allowedRooms.includes(room.id)) {
                 chainsForRoom.add(rootPath);
