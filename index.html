@@ -35,6 +35,11 @@
         </div>
 
         <div class="controls">
+            <button class="save-btn" onclick="showSaveModal()">Save Layout</button>
+            <button class="load-btn" onclick="showLoadModal()">Load Layout</button>
+            <button class="export-btn" onclick="exportLayout()">Export JSON</button>
+            <button class="import-btn" onclick="document.getElementById('import-file').click()">Import JSON</button>
+            <input type="file" id="import-file" accept=".json" style="display: none" onchange="importLayout(event)">
             <button class="clear-btn" onclick="clearGrid()">Clear All</button>
         </div>
     </div>
@@ -47,6 +52,37 @@
                 <button class="modal-close" onclick="closeRoomPickerModal()">&times;</button>
             </div>
             <div class="modal-body" id="room-picker-grid"></div>
+        </div>
+    </div>
+
+    <!-- Modal for saving layout -->
+    <div class="modal" id="save-modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Save Layout</h2>
+                <button class="modal-close" onclick="closeSaveModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="layout-name">Layout Name:</label>
+                <input type="text" id="layout-name" placeholder="My Temple Layout" class="text-input">
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="saveLayout()">Save</button>
+                    <button class="btn-secondary" onclick="closeSaveModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for loading layout -->
+    <div class="modal" id="load-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Load Layout</h2>
+                <button class="modal-close" onclick="closeLoadModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="saved-layouts-list" class="saved-layouts-list"></div>
+            </div>
         </div>
     </div>
 

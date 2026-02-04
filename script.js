@@ -6,25 +6,20 @@ const tooltip = document.getElementById('tooltip');
 const modifiersTable = document.getElementById('modifiers-table');
 const gridConnections = document.getElementById('grid-connections');
 
-// Function to convert number to Roman numerals (max level 3)
+// Convert number to Roman numerals (max level 3)
 function toRomanNumeral(num) {
     const romanNumerals = ['', 'I', 'II', 'III'];
     return romanNumerals[Math.min(num, 3)] || '';
 }
 
-// Rooms array loaded from rooms.js
 let selectedRoom = ROOMS[0];
 
-// Locked cell: bottom middle (row 8, column 4)
-const LOCKED_CELL_INDEX = 8 * 9 + 4; // Index 76
+const LOCKED_CELL_INDEX = 8 * 9 + 4;
 
-// Initialize grid data - store objects with their level and upgraded status
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
-// Place path object in locked cell
 gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false };
 
-// Track placement order to assign levels
 let placementOrder = [];
 
 // Accumulate modifiers from all placed objects
@@ -61,12 +56,10 @@ function updateModifiersDisplay() {
     const container = document.createElement('div');
     container.className = 'modifiers-list';
     
-    // Add each modifier as a sentence
     Object.entries(accumulated).forEach(([name, value]) => {
         const modifierItem = document.createElement('p');
         modifierItem.className = 'modifier-item';
         
-        // Replace % with bold value and %
         const parts = name.split('%');
         modifierItem.innerHTML = parts[0] + '<strong>' + value + '%</strong>' + parts[1];
         
@@ -80,13 +73,11 @@ function updateModifiersDisplay() {
 function showTooltip(objectName, objectImage, element) {
     tooltip.innerHTML = '';
     
-    // Create container for image and text
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
     container.style.gap = '8px';
     
-    // Add image
     const img = document.createElement('img');
     img.src = objectImage;
     img.alt = objectName;
@@ -95,7 +86,6 @@ function showTooltip(objectName, objectImage, element) {
     img.style.borderRadius = '4px';
     container.appendChild(img);
     
-    // Add text
     const text = document.createElement('span');
     text.textContent = objectName;
     container.appendChild(text);
@@ -112,11 +102,9 @@ function showTooltip(objectName, objectImage, element) {
 function getPlaceableRooms(index) {
     const placeableRooms = [];
     
-    // Check each room in ROOMS (excluding hidden ones)
     ROOMS.forEach(room => {
         if (room.hidden) return;
         
-        // Temporarily select the room and check if placement is valid
         const originalRoom = selectedRoom;
         selectedRoom = room;
         const isValid = isValidPlacement(index);
@@ -139,7 +127,6 @@ function hideTooltip() {
 function initializeObjectGrid() {
     objectGrid.innerHTML = '';
     ROOMS.forEach((obj) => {
-        // Skip hidden objects
         if (obj.hidden) {
             return;
         }
@@ -172,7 +159,6 @@ function initializeObjectGrid() {
 function selectObject(obj, btnElement) {
     selectedRoom = obj;
     
-    // Update visual feedback
     document.querySelectorAll('.object-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
@@ -184,19 +170,17 @@ function getAdjacentIndices(index) {
     const row = Math.floor(index / GRID_SIZE);
     
     const adjacentIndices = [
-        index - GRID_SIZE,  // up
-        index + GRID_SIZE,  // down
-        index - 1,          // left
-        index + 1           // right
+        index - GRID_SIZE,
+        index + GRID_SIZE,
+        index - 1,
+        index + 1
     ];
     
     return adjacentIndices.filter(adjIndex => {
-        // Check bounds
         if (adjIndex < 0 || adjIndex >= GRID_SIZE * GRID_SIZE) {
             return false;
         }
         
-        // Check if adjacent cell is in same row (for left/right)
         const adjRow = Math.floor(adjIndex / GRID_SIZE);
         if (Math.abs(row - adjRow) > 1) {
             return false;
@@ -216,7 +200,6 @@ function applyConversions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
     
-    // Convert adjacent objects based on the placed object's conversion rules
     if (conversionRule) {
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
@@ -230,7 +213,6 @@ function applyConversions(index) {
         });
     }
     
-    // Check if the placed object can be converted by adjacent objects
     adjacentIndices.forEach(adjIndex => {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
@@ -244,14 +226,13 @@ function applyConversions(index) {
     });
 }
 
-// Helper function to convert an object at a specific index
+// Convert an object at a specific index
 function convertObject(index, convertToId) {
     const targetObject = ROOMS.find(obj => obj.id === convertToId);
     if (targetObject) {
-        const level = gridData[index].level;  // Preserve level
+        const level = gridData[index].level;
         gridData[index].object = targetObject;
         
-        // Update the DOM
         const cell = document.querySelector(`[data-index="${index}"]`);
         if (cell) {
             const imgElement = cell.querySelector('img');
@@ -273,16 +254,13 @@ function applyUpgrades(index) {
     const placedObject = gridData[index].object;
     const adjacentIndices = getAdjacentIndices(index);
     
-    // Reset level to 1 (base level)
     gridData[index].level = 1;
-    gridData[index].upgraded = false;  // Reset upgraded status
+    gridData[index].upgraded = false;
     
     const upgradeRule = UPGRADE_RULES[placedObject.id];
     
     if (upgradeRule) {
-        // Check if this is a count-based rule
         if (upgradeRule.type === 'count') {
-            // Count adjacent objects of the required type(s)
             let count = 0;
             const objectIdsToCount = upgradeRule.objectIds;
             
@@ -292,19 +270,16 @@ function applyUpgrades(index) {
                 }
             });
             
-            // Level equals the count (minimum 1)
             if (count > 0) {
                 gridData[index].level = count;
-                gridData[index].upgraded = true;  // Mark as upgraded
+                gridData[index].upgraded = true;
             }
         } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
-            // List of objects that upgrade this object
             let hasUpgrade = false;
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null) {
                     const adjacentObjectId = gridData[adjIndex].object.id;
                     
-                    // If the adjacent object can upgrade this object, apply upgrade
                     if (upgradeRule.upgradedBy.includes(adjacentObjectId)) {
                         gridData[index].level += 1;
                         hasUpgrade = true;
@@ -312,12 +287,11 @@ function applyUpgrades(index) {
                 }
             });
             if (hasUpgrade) {
-                gridData[index].upgraded = true;  // Mark as upgraded
+                gridData[index].upgraded = true;
             }
         }
     }
     
-    // Update the level indicator for this object
     const cell = document.querySelector(`[data-index="${index}"]`);
     if (cell) {
         const levelIndicator = cell.querySelector('.level-indicator');
@@ -327,16 +301,41 @@ function applyUpgrades(index) {
     }
 }
 
-// Get all rooms that can extend a chain starting from a given room (excluding paths)
+// Get all rooms that can extend a chain starting from a given room
 function getChainExtensions(roomId) {
     if (roomId === 'path') {
-        // Path can start any chain - return all non-path rooms
         return Object.keys(PLACEMENT_RULES).filter(id => id !== 'path');
     }
     
     const allowedRooms = PLACEMENT_RULES[roomId] || [];
-    // Return rooms that this room allows (excluding path)
     return allowedRooms.filter(id => id !== 'path');
+}
+
+// Check if converting a room would break its existing chain connections
+function wouldConversionBreakChain(roomIndex, convertedToId) {
+    if (gridData[roomIndex] === null) return false;
+    
+    const adjacentIndices = getAdjacentIndices(roomIndex);
+    const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
+    
+    for (const adjIndex of adjacentIndices) {
+        if (gridData[adjIndex] !== null) {
+            const adjRoomId = gridData[adjIndex].object.id;
+            const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
+            
+            if (!convertedAllowedRooms.includes(adjRoomId) || !adjAllowedRooms.includes(convertedToId)) {
+                return true;
+            }
+        }
+        
+        if (adjIndex === LOCKED_CELL_INDEX) {
+            if (!convertedAllowedRooms.includes('path')) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 // Get all valid rooms that can be placed at an index based on adjacent chains
@@ -355,10 +354,25 @@ function getValidChainExtensions(index) {
             
             const extensions = getChainExtensions(roomId);
             extensions.forEach(ext => validRooms.add(ext));
+            
+            if (adjIndex !== LOCKED_CELL_INDEX) {
+                for (const [convertingRoomId, conversionTargets] of Object.entries(CONVERSION_RULES)) {
+                    if (conversionTargets[roomId]) {
+                        const convertedToId = conversionTargets[roomId];
+                        const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
+                        const convertingAllowedRooms = PLACEMENT_RULES[convertingRoomId] || [];
+                        
+                        if (convertedAllowedRooms.includes(convertingRoomId) && convertingAllowedRooms.includes(convertedToId)) {
+                            if (!wouldConversionBreakChain(adjIndex, convertedToId)) {
+                                validRooms.add(convertingRoomId);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     
-    // Path can only be placed next to another path
     if (adjacentIndices.some(adjIndex => 
         adjIndex === LOCKED_CELL_INDEX || 
         (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path')
@@ -369,9 +383,8 @@ function getValidChainExtensions(index) {
     return validRooms;
 }
 
-// Check if placement is valid (adjacent only to related rooms or locked cell)
+// Check if placement is valid
 function isValidPlacement(index) {
-    // Check if trying to place sacrificial_chamber and one already exists
     if (selectedRoom.id === 'sacrificial_chamber') {
         const sacrificialChamberExists = gridData.some(cell => 
             cell !== null && cell.object.id === 'sacrificial_chamber'
@@ -381,29 +394,24 @@ function isValidPlacement(index) {
         }
     }
     
-    // Get adjacent indices
     const adjacentIndices = getAdjacentIndices(index);
     
-    // Check if adjacent to any placed room or locked cell
     const hasAdjacentRoom = adjacentIndices.some(adjIndex => 
         adjIndex === LOCKED_CELL_INDEX || gridData[adjIndex] !== null
     );
     
     if (!hasAdjacentRoom) {
-        return false; // Not adjacent to any room or locked cell
+        return false;
     }
     
-    // Get valid chain extensions from all adjacent rooms
     const validExtensions = getValidChainExtensions(index);
     
-    // Check if the selected room is in the valid extensions
     const selectedRoomId = selectedRoom.id;
     
     if (validExtensions.has(selectedRoomId)) {
         return true;
     }
     
-    // Check if the selected room would be converted to a valid extension
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
@@ -418,7 +426,6 @@ function isValidPlacement(index) {
         }
     }
     
-    // Check if an adjacent room would be converted by the selected room to establish a valid chain
     const conversionRuleForSelected = CONVERSION_RULES[selectedRoomId];
     if (conversionRuleForSelected) {
         for (const adjIndex of adjacentIndices) {
@@ -427,7 +434,10 @@ function isValidPlacement(index) {
                 if (conversionRuleForSelected[adjacentObjectId]) {
                     const convertedToId = conversionRuleForSelected[adjacentObjectId];
                     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
-                    if (convertedAllowedRooms.includes(selectedRoomId)) {
+                    const selectedAllowedRooms = PLACEMENT_RULES[selectedRoomId] || [];
+                    if (convertedAllowedRooms.includes(selectedRoomId) && 
+                        selectedAllowedRooms.includes(convertedToId) &&
+                        !wouldConversionBreakChain(adjIndex, convertedToId)) {
                         return true;
                     }
                 }
@@ -446,34 +456,30 @@ function initializeGrid() {
         cell.className = 'cell';
         cell.dataset.index = i;
         
-        // Mark locked cell
         if (i === LOCKED_CELL_INDEX) {
             cell.classList.add('locked');
         }
         
-        // Restore state if object exists
-         if (gridData[i]) {
-             const imgElement = document.createElement('img');
-             imgElement.src = gridData[i].object.image;
-             imgElement.alt = gridData[i].object.name;
-             imgElement.title = gridData[i].object.name;
-             imgElement.style.width = '100%';
-             imgElement.style.height = '100%';
-             cell.appendChild(imgElement);
-             
-             // Add level indicator in bottom right corner
-             const levelIndicator = document.createElement('div');
-             levelIndicator.className = 'level-indicator';
-             levelIndicator.textContent = toRomanNumeral(gridData[i].level);
-             if (gridData[i].level > 0) {
-                 cell.appendChild(levelIndicator);
-             }
-             
-             cell.classList.add('placed');
-             
-             // Apply chain color
-             applyChainColorToCell(i, cell);
-         }
+        if (gridData[i]) {
+            const imgElement = document.createElement('img');
+            imgElement.src = gridData[i].object.image;
+            imgElement.alt = gridData[i].object.name;
+            imgElement.title = gridData[i].object.name;
+            imgElement.style.width = '100%';
+            imgElement.style.height = '100%';
+            cell.appendChild(imgElement);
+            
+            const levelIndicator = document.createElement('div');
+            levelIndicator.className = 'level-indicator';
+            levelIndicator.textContent = toRomanNumeral(gridData[i].level);
+            if (gridData[i].level > 0) {
+                cell.appendChild(levelIndicator);
+            }
+            
+            cell.classList.add('placed');
+            
+            applyChainColorToCell(i, cell);
+        }
         
         if (i !== LOCKED_CELL_INDEX) {
             cell.addEventListener('click', () => toggleCell(i, cell));
@@ -482,10 +488,10 @@ function initializeGrid() {
                 clearCell(i, cell);
             });
             cell.addEventListener('mouseover', () => {
-                 if (gridData[i]) {
-                     showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
-                 }
-             });
+                if (gridData[i]) {
+                    showTooltip(gridData[i].object.name, gridData[i].object.image, cell);
+                }
+            });
             cell.addEventListener('mouseout', () => hideTooltip());
         }
         gridContainer.appendChild(cell);
@@ -494,7 +500,6 @@ function initializeGrid() {
 
 // Apply chain color to a cell based on its root path
 function applyChainColorToCell(index, cellElement) {
-    // Skip coloring path rooms
     if (gridData[index] && gridData[index].object.id === 'path') {
         return;
     }
@@ -509,119 +514,103 @@ function applyChainColorToCell(index, cellElement) {
 
 // Toggle object placement on cell
 function toggleCell(index, cellElement) {
-     if (gridData[index] === null) {
-         // If no room is selected, show the room picker modal
-         if (selectedRoom === null) {
-             showRoomPickerModal(index, cellElement);
-             return;
-         }
-         
-         // Check if placement is valid
-         if (!isValidPlacement(index)) {
-             return;
-         }
-         
-         // Level is based on count of this specific object type
-         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
-         
-         // Place object with level and upgraded status
-         gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false };
-         placementOrder.push(index);
-         
-         // Create image element
-         const imgElement = document.createElement('img');
-         imgElement.src = selectedRoom.image;
-         imgElement.alt = selectedRoom.name;
-         imgElement.title = selectedRoom.name;
-         imgElement.style.width = '100%';
-         imgElement.style.height = '100%';
-         cellElement.appendChild(imgElement);
-         
-         // Add level indicator in bottom right corner
-         const levelIndicator = document.createElement('div');
-         levelIndicator.className = 'level-indicator';
-         levelIndicator.textContent = toRomanNumeral(objectLevel);
-         if (objectLevel > 0) {
-             cellElement.appendChild(levelIndicator);
-         }
-         
-         cellElement.classList.add('placed');
-         
-         // Apply chain color to this cell
-         applyChainColorToCell(index, cellElement);
-         
-         // Apply conversions first (before upgrades)
-         applyConversions(index);
-         
-         // Apply upgrades to this newly placed object
-         applyUpgrades(index);
-         
-         // Apply upgrades to all adjacent objects as well
-         const adjacentIndices = getAdjacentIndices(index);
-         adjacentIndices.forEach(adjIndex => {
-             if (gridData[adjIndex] !== null) {
-                 applyUpgrades(adjIndex);
-             }
-         });
-     } else {
-         // Remove object
-         const removedIndex = placementOrder.indexOf(index);
-         if (removedIndex > -1) {
-             placementOrder.splice(removedIndex, 1);
-         }
-         gridData[index] = null;
-         cellElement.innerHTML = '';
-         cellElement.classList.remove('placed');
-         
-         // Reset cell color
-         cellElement.style.backgroundColor = '';
-         cellElement.style.borderColor = '';
-         
-         // Recalculate upgrades for all adjacent objects
-         const adjacentIndices = getAdjacentIndices(index);
-         adjacentIndices.forEach(adjIndex => {
-             if (gridData[adjIndex] !== null) {
-                 applyUpgrades(adjIndex);
-             }
-         });
-     }
-     
-     updateCount();
- }
+    if (gridData[index] === null) {
+        if (selectedRoom === null) {
+            showRoomPickerModal(index, cellElement);
+            return;
+        }
+        
+        if (!isValidPlacement(index)) {
+            return;
+        }
+        
+        const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
+        
+        gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false };
+        placementOrder.push(index);
+        
+        const imgElement = document.createElement('img');
+        imgElement.src = selectedRoom.image;
+        imgElement.alt = selectedRoom.name;
+        imgElement.title = selectedRoom.name;
+        imgElement.style.width = '100%';
+        imgElement.style.height = '100%';
+        cellElement.appendChild(imgElement);
+        
+        const levelIndicator = document.createElement('div');
+        levelIndicator.className = 'level-indicator';
+        levelIndicator.textContent = toRomanNumeral(objectLevel);
+        if (objectLevel > 0) {
+            cellElement.appendChild(levelIndicator);
+        }
+        
+        cellElement.classList.add('placed');
+        
+        applyChainColorToCell(index, cellElement);
+        
+        applyConversions(index);
+        
+        applyUpgrades(index);
+        
+        const adjacentIndices = getAdjacentIndices(index);
+        adjacentIndices.forEach(adjIndex => {
+            if (gridData[adjIndex] !== null) {
+                applyUpgrades(adjIndex);
+            }
+        });
+    } else {
+        const removedIndex = placementOrder.indexOf(index);
+        if (removedIndex > -1) {
+            placementOrder.splice(removedIndex, 1);
+        }
+        gridData[index] = null;
+        cellElement.innerHTML = '';
+        cellElement.classList.remove('placed');
+        
+        cellElement.style.backgroundColor = '';
+        cellElement.style.borderColor = '';
+        
+        const adjacentIndices = getAdjacentIndices(index);
+        adjacentIndices.forEach(adjIndex => {
+            if (gridData[adjIndex] !== null) {
+                applyUpgrades(adjIndex);
+            }
+        });
+    }
+    
+    updateCount();
+}
 
 // Clear cell (for right-click)
 function clearCell(index, cellElement) {
-     if (gridData[index] !== null) {
-         const removedIndex = placementOrder.indexOf(index);
-         if (removedIndex > -1) {
-             placementOrder.splice(removedIndex, 1);
-         }
-         gridData[index] = null;
-         cellElement.innerHTML = '';
-         cellElement.classList.remove('placed');
-         
-         // Reset cell color
-         cellElement.style.backgroundColor = '';
-         cellElement.style.borderColor = '';
-         
-         // Recalculate upgrades for all adjacent objects
-         const adjacentIndices = getAdjacentIndices(index);
-         adjacentIndices.forEach(adjIndex => {
-             if (gridData[adjIndex] !== null) {
-                 applyUpgrades(adjIndex);
-             }
-         });
-         
-         updateCount();
-     }
- }
+    if (gridData[index] !== null) {
+        const removedIndex = placementOrder.indexOf(index);
+        if (removedIndex > -1) {
+            placementOrder.splice(removedIndex, 1);
+        }
+        gridData[index] = null;
+        cellElement.innerHTML = '';
+        cellElement.classList.remove('placed');
+        
+        cellElement.style.backgroundColor = '';
+        cellElement.style.borderColor = '';
+        
+        const adjacentIndices = getAdjacentIndices(index);
+        adjacentIndices.forEach(adjIndex => {
+            if (gridData[adjIndex] !== null) {
+                applyUpgrades(adjIndex);
+            }
+        });
+        
+        updateCount();
+    }
+}
 
 // Clear all objects from grid
 function clearGrid() {
     if (confirm('Are you sure you want to clear all objects?')) {
         gridData.fill(null);
         placementOrder = [];
-        // Reset chain colors
         chainColorMap.clear();
         nextColorIndex = 0;
         initializeGrid();
@@ -656,11 +645,10 @@ function getAdjacentPaths(index) {
 // Trace back from a cell to find its root path by following the chain
 function traceChainToPath(startIndex, visited = new Set()) {
     if (visited.has(startIndex)) {
-        return null; // Avoid infinite loops
+        return null;
     }
     visited.add(startIndex);
     
-    // If this is the locked cell or a path, we found the root
     if (startIndex === LOCKED_CELL_INDEX) {
         return LOCKED_CELL_INDEX;
     }
@@ -673,12 +661,10 @@ function traceChainToPath(startIndex, visited = new Set()) {
         return startIndex;
     }
     
-    // Otherwise, check adjacent cells to trace back
     const adjacentIndices = getAdjacentIndices(startIndex);
     const currentRoomId = gridData[startIndex].object.id;
     
     for (const adjIndex of adjacentIndices) {
-        // Check if adjacent to locked cell
         if (adjIndex === LOCKED_CELL_INDEX) {
             return LOCKED_CELL_INDEX;
         }
@@ -689,7 +675,6 @@ function traceChainToPath(startIndex, visited = new Set()) {
         
         const adjRoomId = gridData[adjIndex].object.id;
         
-        // Check if the adjacent room can connect to current room (valid chain)
         const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
         if (adjAllowedRooms.includes(currentRoomId)) {
             const rootPath = traceChainToPath(adjIndex, visited);
@@ -706,8 +691,7 @@ function traceChainToPath(startIndex, visited = new Set()) {
 function groupRoomsByChain(cellIndex, placeableRooms) {
     const adjacentIndices = getAdjacentIndices(cellIndex);
     
-    // Find all adjacent cells that have rooms (including paths and locked cell)
-    const adjacentSources = []; // { index, roomId, rootPath }
+    const adjacentSources = [];
     
     adjacentIndices.forEach(adjIndex => {
         if (adjIndex === LOCKED_CELL_INDEX) {
@@ -729,17 +713,29 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
         }
     });
     
-    // For each placeable room, determine which root paths it can extend from
-    const roomToChainsMap = new Map(); // room -> set of root path indices
+    const roomToChainsMap = new Map();
     
     placeableRooms.forEach(room => {
         const chainsForRoom = new Set();
         
-        // Check which adjacent sources allow this room
         adjacentSources.forEach(({ index: adjIndex, roomId, rootPath }) => {
             const allowedRooms = PLACEMENT_RULES[roomId] || [];
             if (allowedRooms.includes(room.id)) {
                 chainsForRoom.add(rootPath);
+            }
+            
+            if (adjIndex !== LOCKED_CELL_INDEX) {
+                const conversionRule = CONVERSION_RULES[room.id];
+                if (conversionRule && conversionRule[roomId]) {
+                    const convertedToId = conversionRule[roomId];
+                    const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
+                    const roomAllowedRooms = PLACEMENT_RULES[room.id] || [];
+                    if (convertedAllowedRooms.includes(room.id) && 
+                        roomAllowedRooms.includes(convertedToId) &&
+                        !wouldConversionBreakChain(adjIndex, convertedToId)) {
+                        chainsForRoom.add(rootPath);
+                    }
+                }
             }
         });
         
@@ -748,25 +744,20 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
         }
     });
     
-    // Group rooms: single-chain rooms grouped by root path, multi-chain rooms in separate group
-    const singleChainGroups = new Map(); // rootPathIndex -> rooms[]
-    const multiChainRooms = []; // rooms that can extend multiple chains
+    const singleChainGroups = new Map();
+    const multiChainRooms = [];
     
     placeableRooms.forEach(room => {
         const chains = roomToChainsMap.get(room);
         
         if (!chains || chains.size === 0) {
-            // Should not happen if room is placeable, but handle gracefully
-            // Put in first available group
         } else if (chains.size === 1) {
-            // Room extends from exactly one chain
             const rootPath = chains.values().next().value;
             if (!singleChainGroups.has(rootPath)) {
                 singleChainGroups.set(rootPath, []);
             }
             singleChainGroups.get(rootPath).push(room);
         } else {
-            // Room can extend from multiple chains
             multiChainRooms.push(room);
         }
     });
@@ -776,17 +767,16 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
 
 // Chain color palette
 const CHAIN_COLORS = [
-    { bg: '#e3f2fd', border: '#2196f3', header: '#1565c0' }, // Blue
-    { bg: '#f3e5f5', border: '#9c27b0', header: '#7b1fa2' }, // Purple
-    { bg: '#e8f5e9', border: '#4caf50', header: '#2e7d32' }, // Green
-    { bg: '#fff3e0', border: '#ff9800', header: '#e65100' }, // Orange
-    { bg: '#fce4ec', border: '#e91e63', header: '#c2185b' }, // Pink
-    { bg: '#e0f7fa', border: '#00bcd4', header: '#00838f' }, // Cyan
-    { bg: '#fff8e1', border: '#ffc107', header: '#ff8f00' }, // Amber
-    { bg: '#f1f8e9', border: '#8bc34a', header: '#558b2f' }, // Light Green
+    { bg: '#e3f2fd', border: '#2196f3', header: '#1565c0' },
+    { bg: '#f3e5f5', border: '#9c27b0', header: '#7b1fa2' },
+    { bg: '#e8f5e9', border: '#4caf50', header: '#2e7d32' },
+    { bg: '#fff3e0', border: '#ff9800', header: '#e65100' },
+    { bg: '#fce4ec', border: '#e91e63', header: '#c2185b' },
+    { bg: '#e0f7fa', border: '#00bcd4', header: '#00838f' },
+    { bg: '#fff8e1', border: '#ffc107', header: '#ff8f00' },
+    { bg: '#f1f8e9', border: '#8bc34a', header: '#558b2f' },
 ];
 
-// Map to store assigned colors for each root path
 const chainColorMap = new Map();
 let nextColorIndex = 0;
 
@@ -799,6 +789,20 @@ function getChainColor(rootPathIndex) {
     return chainColorMap.get(rootPathIndex);
 }
 
+// Calculate luminance of a color
+function getLuminance(hexColor) {
+    const rgb = parseInt(hexColor.slice(1), 16);
+    const r = (rgb >> 16) & 255;
+    const g = (rgb >> 8) & 255;
+    const b = rgb & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+// Get contrasting text color based on background
+function getContrastingTextColor(bgColor) {
+    return getLuminance(bgColor) > 0.5 ? '#000000' : '#ffffff';
+}
+
 // Get display name for a chain's root path
 function getChainDisplayName(rootPathIndex) {
     const row = Math.floor(rootPathIndex / GRID_SIZE);
@@ -806,7 +810,7 @@ function getChainDisplayName(rootPathIndex) {
     return `Path (${row}, ${col})`;
 }
 
-// Room picker modal functions
+// Show room picker modal
 function showRoomPickerModal(cellIndex, cellElement) {
     const placeableRooms = getPlaceableRooms(cellIndex);
     const roomPickerGrid = document.getElementById('room-picker-grid');
@@ -819,7 +823,6 @@ function showRoomPickerModal(cellIndex, cellElement) {
     } else {
         const { singleChainGroups, multiChainRooms } = groupRoomsByChain(cellIndex, placeableRooms);
         
-        // Create room button helper function
         const createRoomButton = (room) => {
             const btn = document.createElement('button');
             btn.className = 'room-picker-btn';
@@ -839,13 +842,11 @@ function showRoomPickerModal(cellIndex, cellElement) {
             return btn;
         };
         
-        // Render single-chain groups
         singleChainGroups.forEach((rooms, rootPathIndex) => {
             if (rooms.length > 0) {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'room-picker-group';
                 
-                // Apply chain color
                 const chainColor = getChainColor(rootPathIndex);
                 groupDiv.style.backgroundColor = chainColor.bg;
                 groupDiv.style.borderColor = chainColor.border;
@@ -854,7 +855,7 @@ function showRoomPickerModal(cellIndex, cellElement) {
                 groupHeader.className = 'room-picker-group-header';
                 groupHeader.textContent = getChainDisplayName(rootPathIndex);
                 groupHeader.style.borderBottomColor = chainColor.border;
-                groupHeader.style.color = chainColor.header;
+                groupHeader.style.color = getContrastingTextColor(chainColor.bg);
                 groupDiv.appendChild(groupHeader);
                 
                 const groupContent = document.createElement('div');
@@ -868,7 +869,6 @@ function showRoomPickerModal(cellIndex, cellElement) {
             }
         });
         
-        // Render multi-chain rooms group
         if (multiChainRooms.length > 0) {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'room-picker-group room-picker-group-multi';
@@ -892,6 +892,7 @@ function showRoomPickerModal(cellIndex, cellElement) {
     modal.classList.add('show');
 }
 
+// Close room picker modal
 function closeRoomPickerModal() {
     const modal = document.getElementById('room-picker-modal');
     modal.classList.remove('show');
@@ -907,7 +908,6 @@ document.addEventListener('click', (e) => {
 
 // Deselect room when clicking outside of grid cells and object selector
 document.addEventListener('click', (e) => {
-    // Keep selection if clicking on grid cells or object selector
     const cellElement = e.target.closest('.cell');
     const objectBtn = e.target.closest('.object-btn');
     
@@ -915,7 +915,6 @@ document.addEventListener('click', (e) => {
         return;
     }
     
-    // Deselect when clicking outside these interactive areas
     selectedRoom = null;
     document.querySelectorAll('.object-btn').forEach(btn => {
         btn.classList.remove('selected');
@@ -924,26 +923,22 @@ document.addEventListener('click', (e) => {
 
 // Draw connections between related rooms
 function drawConnections() {
-    // Clear previous connections
     gridConnections.innerHTML = '';
     
-    // Set SVG dimensions to match the wrapper
     const wrapper = gridConnections.parentElement;
     gridConnections.setAttribute('width', wrapper.offsetWidth);
     gridConnections.setAttribute('height', wrapper.offsetHeight);
     
-    // For each cell with a room, check adjacent cells
     gridData.forEach((cell, index) => {
         if (cell === null) return;
         
         const adjacentIndices = getAdjacentIndices(index);
         
         adjacentIndices.forEach(adjIndex => {
-            if (index < adjIndex && gridData[adjIndex] !== null) { // Only draw once per pair
+            if (index < adjIndex && gridData[adjIndex] !== null) {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const currentObjectId = cell.object.id;
                 
-                // Check if rooms are related (in placement rules)
                 const allowedRooms = PLACEMENT_RULES[currentObjectId] || [];
                 if (allowedRooms.includes(adjacentObjectId)) {
                     drawConnectionLine(index, adjIndex);
@@ -953,7 +948,7 @@ function drawConnections() {
     });
 }
 
-// Draw a line between two cell indices, accounting for 45-degree rotation
+// Draw a line between two cell indices
 function drawConnectionLine(index1, index2) {
     const cell1 = document.querySelector(`[data-index="${index1}"]`);
     const cell2 = document.querySelector(`[data-index="${index2}"]`);
@@ -965,36 +960,29 @@ function drawConnectionLine(index1, index2) {
     const wrapper = gridConnections.parentElement;
     const wrapperRect = wrapper.getBoundingClientRect();
     
-    // Get center points of cells in SVG coordinate space
     const center1X = rect1.left - wrapperRect.left + rect1.width / 2;
     const center1Y = rect1.top - wrapperRect.top + rect1.height / 2;
     const center2X = rect2.left - wrapperRect.left + rect2.width / 2;
     const center2Y = rect2.top - wrapperRect.top + rect2.height / 2;
     
-    // Calculate direction vector between centers
     const dx = center2X - center1X;
     const dy = center2Y - center1Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     if (distance === 0) return;
     
-    // Normalize direction vector
     const normX = dx / distance;
     const normY = dy / distance;
     
-    // For a square rotated 45 degrees, use the edge distance (half the cell dimensions)
-    // This gives us the distance from center to the edge of the diamond
     const cellWidth = rect1.width;
     const cellHeight = rect1.height;
     const radius = Math.max(cellWidth, cellHeight) / 2;
     
-    // Calculate edge points on both cells
     const x1 = center1X + normX * radius;
     const y1 = center1Y + normY * radius;
     const x2 = center2X - normX * radius;
     const y2 = center2Y - normY * radius;
     
-    // Create line element
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x1);
     line.setAttribute('y1', y1);
@@ -1010,3 +998,282 @@ function drawConnectionLine(index1, index2) {
 // Initialize on page load
 initializeObjectGrid();
 initializeGrid();
+
+// ==================== Save/Load Functionality ====================
+
+const STORAGE_KEY = 'atziri_temple_layouts';
+
+// Get all saved layouts from localStorage
+function getSavedLayouts() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+}
+
+// Save layouts to localStorage
+function saveSavedLayouts(layouts) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
+}
+
+// Convert grid data to a serializable format
+function serializeGridData() {
+    return gridData.map(cell => {
+        if (cell === null) return null;
+        return {
+            objectId: cell.object.id,
+            level: cell.level,
+            upgraded: cell.upgraded
+        };
+    });
+}
+
+// Restore grid data from serialized format
+function deserializeGridData(serialized) {
+    return serialized.map(cell => {
+        if (cell === null) return null;
+        const room = ROOMS.find(r => r.id === cell.objectId);
+        if (!room) return null;
+        return {
+            object: room,
+            level: cell.level,
+            upgraded: cell.upgraded
+        };
+    });
+}
+
+// Show save modal
+function showSaveModal() {
+    const modal = document.getElementById('save-modal');
+    const input = document.getElementById('layout-name');
+    input.value = '';
+    input.focus();
+    modal.classList.add('show');
+}
+
+// Close save modal
+function closeSaveModal() {
+    const modal = document.getElementById('save-modal');
+    modal.classList.remove('show');
+}
+
+// Save current layout
+function saveLayout() {
+    const nameInput = document.getElementById('layout-name');
+    let name = nameInput.value.trim();
+    
+    if (!name) {
+        name = 'Untitled Layout';
+    }
+    
+    const layouts = getSavedLayouts();
+    const id = 'layout_' + Date.now();
+    
+    layouts[id] = {
+        name: name,
+        createdAt: new Date().toISOString(),
+        gridData: serializeGridData(),
+        placementOrder: [...placementOrder]
+    };
+    
+    saveSavedLayouts(layouts);
+    closeSaveModal();
+    
+    showNotification(`Layout "${name}" saved!`);
+}
+
+// Show load modal
+function showLoadModal() {
+    const modal = document.getElementById('load-modal');
+    const listContainer = document.getElementById('saved-layouts-list');
+    
+    const layouts = getSavedLayouts();
+    const layoutIds = Object.keys(layouts);
+    
+    listContainer.innerHTML = '';
+    
+    if (layoutIds.length === 0) {
+        listContainer.innerHTML = '<p class="no-layouts-message">No saved layouts yet</p>';
+    } else {
+        layoutIds.sort((a, b) => new Date(layouts[b].createdAt) - new Date(layouts[a].createdAt));
+        
+        layoutIds.forEach(id => {
+            const layout = layouts[id];
+            const item = document.createElement('div');
+            item.className = 'saved-layout-item';
+            
+            const date = new Date(layout.createdAt);
+            const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            item.innerHTML = `
+                <div class="saved-layout-info" onclick="loadLayout('${id}')">
+                    <div class="saved-layout-name">${escapeHtml(layout.name)}</div>
+                    <div class="saved-layout-date">${dateStr}</div>
+                </div>
+                <div class="saved-layout-actions">
+                    <button class="btn-danger" onclick="deleteLayout('${id}')">Delete</button>
+                </div>
+            `;
+            
+            listContainer.appendChild(item);
+        });
+    }
+    
+    modal.classList.add('show');
+}
+
+// Close load modal
+function closeLoadModal() {
+    const modal = document.getElementById('load-modal');
+    modal.classList.remove('show');
+}
+
+// Load a saved layout
+function loadLayout(id) {
+    const layouts = getSavedLayouts();
+    const layout = layouts[id];
+    
+    if (!layout) {
+        showNotification('Layout not found', 'error');
+        return;
+    }
+    
+    const restoredData = deserializeGridData(layout.gridData);
+    
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        gridData[i] = restoredData[i];
+    }
+    
+    placementOrder = layout.placementOrder ? [...layout.placementOrder] : [];
+    
+    chainColorMap.clear();
+    nextColorIndex = 0;
+    
+    initializeGrid();
+    updateCount();
+    
+    closeLoadModal();
+    showNotification(`Layout "${layout.name}" loaded!`);
+}
+
+// Delete a saved layout
+function deleteLayout(id) {
+    const layouts = getSavedLayouts();
+    const layout = layouts[id];
+    
+    if (!layout) return;
+    
+    if (confirm(`Are you sure you want to delete "${layout.name}"?`)) {
+        delete layouts[id];
+        saveSavedLayouts(layouts);
+        showLoadModal();
+        showNotification(`Layout "${layout.name}" deleted`);
+    }
+}
+
+// Export current layout to JSON file
+function exportLayout() {
+    const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        gridData: serializeGridData(),
+        placementOrder: [...placementOrder]
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'temple_layout_' + Date.now() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('Layout exported!');
+}
+
+// Import layout from JSON file
+function importLayout(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (!data.gridData || !Array.isArray(data.gridData)) {
+                throw new Error('Invalid layout format');
+            }
+            
+            const restoredData = deserializeGridData(data.gridData);
+            
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                gridData[i] = restoredData[i];
+            }
+            
+            placementOrder = data.placementOrder ? [...data.placementOrder] : [];
+            
+            chainColorMap.clear();
+            nextColorIndex = 0;
+            
+            initializeGrid();
+            updateCount();
+            
+            showNotification('Layout imported successfully!');
+        } catch (err) {
+            showNotification('Failed to import layout: ' + err.message, 'error');
+        }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Show notification toast
+function showNotification(message, type = 'success') {
+    const existing = document.querySelector('.notification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-' + type;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', (e) => {
+    const saveModal = document.getElementById('save-modal');
+    const loadModal = document.getElementById('load-modal');
+    
+    if (e.target === saveModal) {
+        closeSaveModal();
+    }
+    if (e.target === loadModal) {
+        closeLoadModal();
+    }
+});
+
+// Handle Enter key in save modal
+document.getElementById('layout-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        saveLayout();
+    }
+});
