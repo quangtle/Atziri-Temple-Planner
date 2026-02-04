@@ -368,6 +368,12 @@ function getValidChainExtensions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const validRooms = new Set();
     
+    // Check if there's an adjacent path (for generator placement rule)
+    const hasAdjacentPath = adjacentIndices.some(adjIndex => 
+        adjIndex === LOCKED_CELL_INDEX || 
+        (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path')
+    );
+    
     for (const adjIndex of adjacentIndices) {
         if (adjIndex === LOCKED_CELL_INDEX || (gridData[adjIndex] !== null)) {
             let roomId;
@@ -396,11 +402,13 @@ function getValidChainExtensions(index) {
         }
     }
     
-    if (adjacentIndices.some(adjIndex => 
-        adjIndex === LOCKED_CELL_INDEX || 
-        (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path')
-    )) {
+    if (hasAdjacentPath) {
         validRooms.add('path');
+    }
+    
+    // Generator can only be placed adjacent to a path
+    if (!hasAdjacentPath) {
+        validRooms.delete('generator');
     }
     
     // Filter out rooms that would break any chain when placed
@@ -421,6 +429,18 @@ function isValidPlacement(index) {
             cell !== null && cell.object.id === 'sacrificial_chamber'
         );
         if (sacrificialChamberExists) {
+            return false;
+        }
+    }
+    
+    // Generator can only be placed adjacent to a path, not extending other rooms
+    if (selectedRoom.id === 'generator') {
+        const adjacentIndices = getAdjacentIndices(index);
+        const hasAdjacentPath = adjacentIndices.some(adjIndex => 
+            adjIndex === LOCKED_CELL_INDEX || 
+            (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path')
+        );
+        if (!hasAdjacentPath) {
             return false;
         }
     }
