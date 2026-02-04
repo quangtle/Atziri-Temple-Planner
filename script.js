@@ -18,7 +18,7 @@ const LOCKED_CELL_INDEX = 8 * 9 + 4;
 
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
-gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false, convertedBy: null };
+gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false, convertedBy: null, upgradedBy: [] };
 
 let placementOrder = [];
 
@@ -264,6 +264,7 @@ function applyUpgrades(index) {
     
     gridData[index].level = 1;
     gridData[index].upgraded = false;
+    gridData[index].upgradedBy = [];  // Reset upgradedBy tracking
     
     const upgradeRule = UPGRADE_RULES[placedObject.id];
     
@@ -284,13 +285,17 @@ function applyUpgrades(index) {
             }
         } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
             let hasUpgrade = false;
+            const usedUpgradeTypes = new Set();  // Track which upgrade room types have been used
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null) {
                     const adjacentObjectId = gridData[adjIndex].object.id;
                     
-                    if (upgradeRule.upgradedBy.includes(adjacentObjectId)) {
+                    // Only apply upgrade if this room type hasn't been used yet
+                    if (upgradeRule.upgradedBy.includes(adjacentObjectId) && !usedUpgradeTypes.has(adjacentObjectId)) {
                         gridData[index].level += 1;
                         hasUpgrade = true;
+                        usedUpgradeTypes.add(adjacentObjectId);
+                        gridData[index].upgradedBy.push(adjacentObjectId);  // Track which room type upgraded this room
                     }
                 }
             });
@@ -498,6 +503,25 @@ function isValidPlacement(index) {
         return false;
     }
     
+    // Check if placing this room would try to upgrade an adjacent room that has already been upgraded by this room type
+    for (const adjIndex of adjacentIndices) {
+        if (gridData[adjIndex] !== null) {
+            const adjacentCell = gridData[adjIndex];
+            const adjacentObjectId = adjacentCell.object.id;
+            const adjacentUpgradeRule = UPGRADE_RULES[adjacentObjectId];
+            
+            // Check if the adjacent room can be upgraded by the selected room type
+            if (adjacentUpgradeRule && adjacentUpgradeRule.type === 'list' &&
+                Array.isArray(adjacentUpgradeRule.upgradedBy) &&
+                adjacentUpgradeRule.upgradedBy.includes(selectedRoomId)) {
+                // Check if the adjacent room has already been upgraded by this room type
+                if (adjacentCell.upgradedBy && adjacentCell.upgradedBy.includes(selectedRoomId)) {
+                    return false;
+                }
+            }
+        }
+    }
+    
     const validExtensions = getValidChainExtensions(index);
     
     if (validExtensions.has(selectedRoomId)) {
@@ -617,7 +641,7 @@ function toggleCell(index, cellElement) {
         
         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
         
-        gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null };
+        gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null, upgradedBy: [] };
         placementOrder.push(index);
         
         const imgElement = document.createElement('img');
