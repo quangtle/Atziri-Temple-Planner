@@ -383,10 +383,12 @@ function getValidChainExtensions(index) {
                 roomId = gridData[adjIndex].object.id;
             }
             
+            // Add rooms that can directly extend from the adjacent room
             const extensions = getChainExtensions(roomId);
             extensions.forEach(ext => validRooms.add(ext));
             
             if (adjIndex !== LOCKED_CELL_INDEX) {
+                // Add rooms that would convert the adjacent room (placed room converts adjacent)
                 for (const [convertingRoomId, conversionTargets] of Object.entries(CONVERSION_RULES)) {
                     if (conversionTargets[roomId]) {
                         const convertedToId = conversionTargets[roomId];
@@ -395,6 +397,19 @@ function getValidChainExtensions(index) {
                         
                         if (convertedAllowedRooms.includes(convertingRoomId) && convertingAllowedRooms.includes(convertedToId)) {
                             validRooms.add(convertingRoomId);
+                        }
+                    }
+                }
+                
+                // Add rooms that would BE CONVERTED BY the adjacent room (adjacent room converts placed room)
+                const adjConversionRule = CONVERSION_RULES[roomId];
+                if (adjConversionRule) {
+                    for (const [targetRoomId, convertedToId] of Object.entries(adjConversionRule)) {
+                        // If adjacent room converts targetRoomId to convertedToId
+                        // and convertedToId is a valid extension, then targetRoomId can be placed
+                        const adjAllowedRooms = PLACEMENT_RULES[roomId] || [];
+                        if (adjAllowedRooms.includes(convertedToId)) {
+                            validRooms.add(targetRoomId);
                         }
                     }
                 }
@@ -780,6 +795,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             }
             
             if (adjIndex !== LOCKED_CELL_INDEX) {
+                // Case: placed room converts adjacent room
                 const conversionRule = CONVERSION_RULES[room.id];
                 if (conversionRule && conversionRule[roomId]) {
                     const convertedToId = conversionRule[roomId];
@@ -788,6 +804,16 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
                     if (convertedAllowedRooms.includes(room.id) && 
                         roomAllowedRooms.includes(convertedToId) &&
                         !wouldConversionBreakChain(adjIndex, convertedToId)) {
+                        chainsForRoom.add(rootPath);
+                    }
+                }
+                
+                // Case: adjacent room converts placed room
+                const adjConversionRule = CONVERSION_RULES[roomId];
+                if (adjConversionRule && adjConversionRule[room.id]) {
+                    const convertedToId = adjConversionRule[room.id];
+                    // Check if the converted result is allowed by adjacent room
+                    if (allowedRooms.includes(convertedToId)) {
                         chainsForRoom.add(rootPath);
                     }
                 }
