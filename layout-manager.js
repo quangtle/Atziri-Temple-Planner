@@ -131,26 +131,30 @@ function closeLoadModal() {
 function loadLayout(id) {
     const layouts = getSavedLayouts();
     const layout = layouts[id];
-    
+
     if (!layout) {
         showNotification('Layout not found', 'error');
         return;
     }
-    
+
     const restoredData = deserializeGridData(layout.gridData);
-    
+
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         gridData[i] = restoredData[i];
     }
-    
+
     placementOrder = layout.placementOrder ? [...layout.placementOrder] : [];
-    
+
     chainColorMap.clear();
     nextColorIndex = 0;
-    
+
     initializeGrid();
+
+    // Re-apply all conversions after loading
+    reapplyAllConversions();
+
     updateCount();
-    
+
     closeLoadModal();
     showNotification(`Layout "${layout.name}" loaded!`);
 }
@@ -198,36 +202,40 @@ function exportLayout() {
 function importLayout(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            
+
             if (!data.gridData || !Array.isArray(data.gridData)) {
                 throw new Error('Invalid layout format');
             }
-            
+
             const restoredData = deserializeGridData(data.gridData);
-            
+
             for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
                 gridData[i] = restoredData[i];
             }
-            
+
             placementOrder = data.placementOrder ? [...data.placementOrder] : [];
-            
+
             chainColorMap.clear();
             nextColorIndex = 0;
-            
+
             initializeGrid();
+
+            // Re-apply all conversions after importing
+            reapplyAllConversions();
+
             updateCount();
-            
+
             showNotification('Layout imported successfully!');
         } catch (err) {
             showNotification('Failed to import layout: ' + err.message, 'error');
         }
     };
-    
+
     reader.readAsText(file);
     event.target.value = '';
 }

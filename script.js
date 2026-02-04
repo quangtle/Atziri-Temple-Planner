@@ -402,9 +402,13 @@ function convertObject(index, convertToId, convertedByRoomId) {
     const targetObject = ROOMS.find(obj => obj.id === convertToId);
     if (targetObject) {
         const level = gridData[index].level;
+        // Store the original object before conversion if not already stored
+        if (!gridData[index].originalObject) {
+            gridData[index].originalObject = gridData[index].object;
+        }
         gridData[index].object = targetObject;
         gridData[index].convertedBy = convertedByRoomId;  // Track which room type caused the conversion
-        
+
         const cell = document.querySelector(`[data-index="${index}"]`);
         if (cell) {
             const imgElement = cell.querySelector('img');
@@ -415,6 +419,64 @@ function convertObject(index, convertToId, convertedByRoomId) {
             }
         }
     }
+}
+
+// Revert conversions when a room is removed
+function revertConversions(removedRoomId, removedIndex) {
+    const adjacentIndices = getAdjacentIndices(removedIndex);
+
+    // Check adjacent rooms that were converted by the removed room
+    adjacentIndices.forEach(adjIndex => {
+        if (gridData[adjIndex] !== null && gridData[adjIndex].convertedBy === removedRoomId) {
+            // Revert to original object
+            if (gridData[adjIndex].originalObject) {
+                gridData[adjIndex].object = gridData[adjIndex].originalObject;
+                gridData[adjIndex].convertedBy = null;
+                gridData[adjIndex].originalObject = null;
+
+                // Update the cell display
+                const cell = document.querySelector(`[data-index="${adjIndex}"]`);
+                if (cell) {
+                    const imgElement = cell.querySelector('img');
+                    if (imgElement) {
+                        imgElement.src = gridData[adjIndex].object.image;
+                        imgElement.alt = gridData[adjIndex].object.name;
+                        imgElement.title = gridData[adjIndex].object.name;
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Re-apply all conversions from existing rooms
+function reapplyAllConversions() {
+    // First pass: reset all converted rooms to their original state
+    gridData.forEach((cell, index) => {
+        if (cell !== null && cell.originalObject) {
+            cell.object = cell.originalObject;
+            cell.convertedBy = null;
+            cell.originalObject = null;
+
+            // Update display
+            const cellElement = document.querySelector(`[data-index="${index}"]`);
+            if (cellElement) {
+                const imgElement = cellElement.querySelector('img');
+                if (imgElement) {
+                    imgElement.src = cell.object.image;
+                    imgElement.alt = cell.object.name;
+                    imgElement.title = cell.object.name;
+                }
+            }
+        }
+    });
+
+    // Second pass: re-apply conversions for all placed rooms
+    gridData.forEach((cell, index) => {
+        if (cell !== null) {
+            applyConversions(index);
+        }
+    });
 }
 
 // Apply upgrades based on all adjacent objects
@@ -842,13 +904,19 @@ function toggleCell(index, cellElement) {
         if (removedIndex > -1) {
             placementOrder.splice(removedIndex, 1);
         }
+
+        const removedRoomId = gridData[index].object.id;
+
         gridData[index] = null;
         cellElement.innerHTML = '';
         cellElement.classList.remove('placed');
-        
+
         cellElement.style.backgroundColor = '';
         cellElement.style.borderColor = '';
-        
+
+        // Revert conversions caused by the removed room and re-apply remaining conversions
+        reapplyAllConversions();
+
         const adjacentIndices = getAdjacentIndices(index);
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
@@ -867,20 +935,26 @@ function clearCell(index, cellElement) {
         if (removedIndex > -1) {
             placementOrder.splice(removedIndex, 1);
         }
+
+        const removedRoomId = gridData[index].object.id;
+
         gridData[index] = null;
         cellElement.innerHTML = '';
         cellElement.classList.remove('placed');
-        
+
         cellElement.style.backgroundColor = '';
         cellElement.style.borderColor = '';
-        
+
+        // Revert conversions caused by the removed room and re-apply remaining conversions
+        reapplyAllConversions();
+
         const adjacentIndices = getAdjacentIndices(index);
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
                 applyUpgrades(adjIndex);
             }
         });
-        
+
         updateCount();
     }
 }
