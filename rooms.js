@@ -16,3 +16,8 @@ const ROOMS = [
     { id: 'flesh_surgeon', name: 'flesh surgeon', label: '', image: 'resources/images/flesh_surgeon.png', hidden: false },
     { id: 'path', name: 'path', label: '', image: 'resources/images/path.png', hidden: false },
 ];
+
+// Export for Node.js/Jest testing (won't affect browser usage)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { ROOMS };
+}

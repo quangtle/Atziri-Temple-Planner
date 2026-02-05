@@ -17,3 +17,8 @@ const PLACEMENT_RULES = {
     'flesh_surgeon': ['synthflesh_lab', 'path'],
     'path': ['path', 'garrison', 'armoury', 'spymaster', 'legion_barrack', 'commander', 'synthflesh_lab', 'transcendent_barracks', 'alchemy_lab', 'smithy', 'sacrificial_chamber', 'thaumaturge', 'golem_works', 'corruption_chamber', 'generator', 'flesh_surgeon']
 };
+
+// Export for Node.js/Jest testing (won't affect browser usage)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { PLACEMENT_RULES };
+}

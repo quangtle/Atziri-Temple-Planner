@@ -8,3 +8,8 @@ const CONVERSION_RULES = {
         'garrison': 'legion_barrack'  // converts garrison to Region Barracks
     }
 };
+
+// Export for Node.js/Jest testing (won't affect browser usage)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { CONVERSION_RULES };
+}

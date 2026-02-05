@@ -50,3 +50,8 @@ const UPGRADE_RULES = {
         upgradedBy:['sacrificial_chamber'] // thaumaturge is upgraded by sacrificial chamber
     }
 };
+
+// Export for Node.js/Jest testing (won't affect browser usage)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { UPGRADE_RULES };
+}
