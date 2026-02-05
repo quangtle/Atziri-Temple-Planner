@@ -1,7 +1,6 @@
 const GRID_SIZE = 9;
 const gridContainer = document.getElementById('grid');
 const objectGrid = document.getElementById('object-grid');
-const countDisplay = document.getElementById('count');
 const tooltip = document.getElementById('tooltip');
 const modifiersTable = document.getElementById('modifiers-table');
 const gridConnections = document.getElementById('grid-connections');
@@ -19,8 +18,6 @@ const LOCKED_CELL_INDEX = 8 * 9 + 4;
 const gridData = Array(GRID_SIZE * GRID_SIZE).fill(null);
 
 gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level: 0, upgraded: false, convertedBy: null, upgradedBy: [] };
-
-let placementOrder = [];
 
 // Accumulate modifiers from all placed objects
 function accumulateModifiers() {
@@ -924,7 +921,6 @@ function toggleCell(index, cellElement) {
         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
         
         gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null, upgradedBy: [] };
-        placementOrder.push(index);
         
         const imgElement = document.createElement('img');
         imgElement.src = selectedRoom.image;
@@ -956,11 +952,6 @@ function toggleCell(index, cellElement) {
             }
         });
     } else {
-        const removedIndex = placementOrder.indexOf(index);
-        if (removedIndex > -1) {
-            placementOrder.splice(removedIndex, 1);
-        }
-
         const removedRoomId = gridData[index].object.id;
 
         gridData[index] = null;
@@ -981,17 +972,13 @@ function toggleCell(index, cellElement) {
         });
     }
     
-    updateCount();
+    updateModifiersDisplay();
+    drawConnections();
 }
 
 // Clear cell (for right-click)
 function clearCell(index, cellElement) {
     if (gridData[index] !== null) {
-        const removedIndex = placementOrder.indexOf(index);
-        if (removedIndex > -1) {
-            placementOrder.splice(removedIndex, 1);
-        }
-
         const removedRoomId = gridData[index].object.id;
 
         gridData[index] = null;
@@ -1011,7 +998,8 @@ function clearCell(index, cellElement) {
             }
         });
 
-        updateCount();
+        updateModifiersDisplay();
+        drawConnections();
     }
 }
 
@@ -1019,20 +1007,12 @@ function clearCell(index, cellElement) {
 function clearGrid() {
     if (confirm('Are you sure you want to clear all objects?')) {
         gridData.fill(null);
-        placementOrder = [];
         chainColorMap.clear();
         nextColorIndex = 0;
         initializeGrid();
-        updateCount();
+        updateModifiersDisplay();
+        drawConnections();
     }
-}
-
-// Update the count display
-function updateCount() {
-    const count = gridData.filter(cell => cell !== null).length;
-    countDisplay.textContent = count;
-    updateModifiersDisplay();
-    drawConnections();
 }
 
 // Get adjacent paths for a cell index

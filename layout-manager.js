@@ -71,8 +71,7 @@ function saveLayout() {
     layouts[id] = {
         name: name,
         createdAt: new Date().toISOString(),
-        gridData: serializeGridData(),
-        placementOrder: [...placementOrder]
+        gridData: serializeGridData()
     };
     
     saveSavedLayouts(layouts);
@@ -143,8 +142,6 @@ function loadLayout(id) {
         gridData[i] = restoredData[i];
     }
 
-    placementOrder = layout.placementOrder ? [...layout.placementOrder] : [];
-
     chainColorMap.clear();
     nextColorIndex = 0;
 
@@ -153,7 +150,8 @@ function loadLayout(id) {
     // Re-apply all conversions after loading
     reapplyAllConversions();
 
-    updateCount();
+    updateModifiersDisplay();
+    drawConnections();
 
     closeLoadModal();
     showNotification(`Layout "${layout.name}" loaded!`);
@@ -179,8 +177,7 @@ function exportLayout() {
     const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        gridData: serializeGridData(),
-        placementOrder: [...placementOrder]
+        gridData: serializeGridData()
     };
     
     const json = JSON.stringify(data, null, 2);
@@ -218,8 +215,6 @@ function importLayout(event) {
                 gridData[i] = restoredData[i];
             }
 
-            placementOrder = data.placementOrder ? [...data.placementOrder] : [];
-
             chainColorMap.clear();
             nextColorIndex = 0;
 
@@ -228,7 +223,8 @@ function importLayout(event) {
             // Re-apply all conversions after importing
             reapplyAllConversions();
 
-            updateCount();
+            updateModifiersDisplay();
+            drawConnections();
 
             showNotification('Layout imported successfully!');
         } catch (err) {
