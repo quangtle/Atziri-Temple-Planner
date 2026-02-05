@@ -221,21 +221,6 @@ h1 {
     transform: none;
 }
 
-.stats {
-    text-align: center;
-    color: #666;
-    font-size: 14px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-    border-left: 4px solid #667eea;
-}
-
-.stats strong {
-    color: #333;
-    font-size: 16px;
-}
-
 .tooltip {
     position: fixed;
     background-color: #333;
@@ -802,15 +787,6 @@ h1 {
     .modifier-item {
         font-size: 11px;
         padding: 5px 0;
-    }
-
-    .stats {
-        padding: 10px;
-        font-size: 12px;
-    }
-
-    .stats strong {
-        font-size: 14px;
     }
 
     .controls {

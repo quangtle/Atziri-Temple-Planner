@@ -418,34 +418,6 @@ function convertObject(index, convertToId, convertedByRoomId) {
     }
 }
 
-// Revert conversions when a room is removed
-function revertConversions(removedRoomId, removedIndex) {
-    const adjacentIndices = getAdjacentIndices(removedIndex);
-
-    // Check adjacent rooms that were converted by the removed room
-    adjacentIndices.forEach(adjIndex => {
-        if (gridData[adjIndex] !== null && gridData[adjIndex].convertedBy === removedRoomId) {
-            // Revert to original object
-            if (gridData[adjIndex].originalObject) {
-                gridData[adjIndex].object = gridData[adjIndex].originalObject;
-                gridData[adjIndex].convertedBy = null;
-                gridData[adjIndex].originalObject = null;
-
-                // Update the cell display
-                const cell = document.querySelector(`[data-index="${adjIndex}"]`);
-                if (cell) {
-                    const imgElement = cell.querySelector('img');
-                    if (imgElement) {
-                        imgElement.src = gridData[adjIndex].object.image;
-                        imgElement.alt = gridData[adjIndex].object.name;
-                        imgElement.title = gridData[adjIndex].object.name;
-                    }
-                }
-            }
-        }
-    });
-}
-
 // Re-apply all conversions from existing rooms
 function reapplyAllConversions() {
     // First pass: reset all converted rooms to their original state
@@ -1013,22 +985,6 @@ function clearGrid() {
         updateModifiersDisplay();
         drawConnections();
     }
-}
-
-// Get adjacent paths for a cell index
-function getAdjacentPaths(index) {
-    const adjacentIndices = getAdjacentIndices(index);
-    const paths = [];
-    
-    adjacentIndices.forEach(adjIndex => {
-        if (adjIndex === LOCKED_CELL_INDEX) {
-            paths.push({ index: adjIndex, id: 'path', name: 'Locked Path' });
-        } else if (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path') {
-            paths.push({ index: adjIndex, id: 'path', name: `Path (${adjIndex})` });
-        }
-    });
-    
-    return paths;
 }
 
 // Trace back from a cell to find its root path by following the chain
