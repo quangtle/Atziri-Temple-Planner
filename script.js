@@ -457,6 +457,11 @@ function applyUpgrades(index) {
     const placedObject = gridData[index].object;
     const adjacentIndices = getAdjacentIndices(index);
     
+    // Don't apply upgrades to rooms that were just converted - they keep their original upgrade state
+    if (gridData[index].convertedBy) {
+        return;
+    }
+    
     gridData[index].level = 1;
     gridData[index].upgraded = false;
     gridData[index].upgradedBy = [];  // Reset upgradedBy tracking
@@ -576,9 +581,6 @@ function getValidChainExtensions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const validRooms = new Set();
     
-    // Track which room types are blocked due to adjacent converted rooms
-    const blockedRoomTypes = new Set();
-    
     // Check if there's an adjacent path (for generator placement rule)
     const hasAdjacentPath = adjacentIndices.some(adjIndex => 
         adjIndex === LOCKED_CELL_INDEX || 
@@ -592,11 +594,6 @@ function getValidChainExtensions(index) {
                 roomId = 'path';
             } else {
                 roomId = gridData[adjIndex].object.id;
-                
-                // If this room was converted, block the room type that converted it
-                if (gridData[adjIndex].convertedBy) {
-                    blockedRoomTypes.add(gridData[adjIndex].convertedBy);
-                }
             }
             
             // Add rooms that can directly extend from the adjacent room
@@ -642,11 +639,6 @@ function getValidChainExtensions(index) {
         validRooms.delete('generator');
     }
     
-    // Remove blocked room types (rooms that converted an adjacent room)
-    for (const blockedType of blockedRoomTypes) {
-        validRooms.delete(blockedType);
-    }
-    
     // Filter out rooms that would break any chain when placed
     const safeRooms = new Set();
     for (const roomId of validRooms) {
@@ -660,7 +652,9 @@ function getValidChainExtensions(index) {
 
 // Check if placement is valid
 function isValidPlacement(index) {
-    if (selectedRoom.id === 'sacrificial_chamber') {
+    const selectedRoomId = selectedRoom.id;
+
+    if (selectedRoomId === 'sacrificial_chamber') {
         const sacrificialChamberExists = gridData.some(cell =>
             cell !== null && cell.object.id === 'sacrificial_chamber'
         );
@@ -670,7 +664,7 @@ function isValidPlacement(index) {
     }
 
     // Generator can only be placed adjacent to a path, not extending other rooms
-    if (selectedRoom.id === 'generator') {
+    if (selectedRoomId === 'generator') {
         const adjacentIndices = getAdjacentIndices(index);
         const hasAdjacentPath = adjacentIndices.some(adjIndex =>
             adjIndex === LOCKED_CELL_INDEX ||
@@ -691,8 +685,6 @@ function isValidPlacement(index) {
         return false;
     }
 
-    const selectedRoomId = selectedRoom.id;
-
     // Check if placing this room would break any existing chain via conversions
     if (wouldPlacementBreakAnyChain(index, selectedRoomId)) {
         return false;
@@ -710,6 +702,7 @@ function isValidPlacement(index) {
                 Array.isArray(adjacentUpgradeRule.upgradedBy) &&
                 adjacentUpgradeRule.upgradedBy.includes(selectedRoomId)) {
                 // Check if the adjacent room has already been upgraded by this room type
+                // Note: Only check upgradedBy, NOT convertedBy - conversions are different from upgrades
                 if (adjacentCell.upgradedBy && adjacentCell.upgradedBy.includes(selectedRoomId)) {
                     return false;
                 }
@@ -723,7 +716,6 @@ function isValidPlacement(index) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
             const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
-            const selectedAllowedRooms = PLACEMENT_RULES[selectedRoomId] || [];
 
             // Check if the connection is symmetrically allowed
             // If this room is NOT in the adjacent room's allowed list, placement is invalid
@@ -845,6 +837,12 @@ function initializeGrid() {
             cell.classList.add('placed');
             
             applyChainColorToCell(i, cell);
+        } else {
+            // Show cell number on empty cells
+            const cellNumber = document.createElement('span');
+            cellNumber.className = 'cell-number';
+            cellNumber.textContent = i;
+            cell.appendChild(cellNumber);
         }
         
         if (i !== LOCKED_CELL_INDEX) {
@@ -894,6 +892,9 @@ function toggleCell(index, cellElement) {
         
         gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null, upgradedBy: [] };
         
+        // Clear the cell number before placing the room
+        cellElement.innerHTML = '';
+        
         const imgElement = document.createElement('img');
         imgElement.src = selectedRoom.image;
         imgElement.alt = selectedRoom.name;
@@ -924,14 +925,18 @@ function toggleCell(index, cellElement) {
             }
         });
     } else {
-        const removedRoomId = gridData[index].object.id;
-
         gridData[index] = null;
         cellElement.innerHTML = '';
         cellElement.classList.remove('placed');
 
         cellElement.style.backgroundColor = '';
         cellElement.style.borderColor = '';
+
+        // Add cell number back
+        const cellNumber = document.createElement('span');
+        cellNumber.className = 'cell-number';
+        cellNumber.textContent = index;
+        cellElement.appendChild(cellNumber);
 
         // Revert conversions caused by the removed room and re-apply remaining conversions
         reapplyAllConversions();
@@ -951,14 +956,18 @@ function toggleCell(index, cellElement) {
 // Clear cell (for right-click)
 function clearCell(index, cellElement) {
     if (gridData[index] !== null) {
-        const removedRoomId = gridData[index].object.id;
-
         gridData[index] = null;
         cellElement.innerHTML = '';
         cellElement.classList.remove('placed');
 
         cellElement.style.backgroundColor = '';
         cellElement.style.borderColor = '';
+
+        // Add cell number back
+        const cellNumber = document.createElement('span');
+        cellNumber.className = 'cell-number';
+        cellNumber.textContent = index;
+        cellElement.appendChild(cellNumber);
 
         // Revert conversions caused by the removed room and re-apply remaining conversions
         reapplyAllConversions();

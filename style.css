@@ -221,6 +221,14 @@ h1 {
     transform: none;
 }
 
+.cell-number {
+    transform: rotate(-45deg);
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+    pointer-events: none;
+}
+
 .tooltip {
     position: fixed;
     background-color: #333;
@@ -769,6 +777,11 @@ h1 {
         transform: none;
         top: 2px;
         right: 2px;
+    }
+
+    /* Remove rotation from cell numbers since grid is no longer rotated on mobile */
+    .cell-number {
+        transform: none;
     }
 
     .modifiers-section {

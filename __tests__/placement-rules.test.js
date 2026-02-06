@@ -7,6 +7,7 @@ const {
     LOCKED_CELL_INDEX,
     getAdjacentIndices,
     wouldConversionBreakChain,
+    wouldPlacementBreakAnyChain,
     isValidPlacement,
     getValidChainExtensions,
     createEmptyGrid,
@@ -16,7 +17,7 @@ const {
 } = require('../placement-logic.js');
 
 describe('getAdjacentIndices', () => {
-    test('returns 4 adjacent cells for center cell', () => {
+    test('[001] returns 4 adjacent cells for center cell', () => {
         // Cell 40 is the center (4,4)
         const adjacent = getAdjacentIndices(40);
         expect(adjacent).toHaveLength(4);
@@ -26,7 +27,7 @@ describe('getAdjacentIndices', () => {
         expect(adjacent).toContain(41); // right
     });
 
-    test('returns 3 adjacent cells for edge cell', () => {
+    test('[002] returns 3 adjacent cells for edge cell', () => {
         // Cell 0 is top-left corner
         const adjacent = getAdjacentIndices(0);
         expect(adjacent).toHaveLength(2);
@@ -34,7 +35,7 @@ describe('getAdjacentIndices', () => {
         expect(adjacent).toContain(1);  // right
     });
 
-    test('returns 3 adjacent cells for top edge', () => {
+    test('[003] returns 3 adjacent cells for top edge', () => {
         // Cell 4 is top middle
         const adjacent = getAdjacentIndices(4);
         expect(adjacent).toHaveLength(3);
@@ -45,19 +46,19 @@ describe('getAdjacentIndices', () => {
 });
 
 describe('PLACEMENT_RULES', () => {
-    test('path can connect to all non-hidden rooms', () => {
+    test('[004] path can connect to all non-hidden rooms', () => {
         const pathAllowed = PLACEMENT_RULES['path'];
         expect(pathAllowed).toContain('garrison');
         expect(pathAllowed).toContain('armoury');
         expect(pathAllowed).toContain('path');
     });
 
-    test('spymaster can only connect to legion_barrack and path', () => {
+    test('[005] spymaster can only connect to legion_barrack and path', () => {
         const spymasterAllowed = PLACEMENT_RULES['spymaster'];
         expect(spymasterAllowed).toEqual(['legion_barrack', 'path']);
     });
 
-    test('garrison can connect to armoury, commander, and path', () => {
+    test('[006] garrison can connect to armoury, commander, and path', () => {
         const garrisonAllowed = PLACEMENT_RULES['garrison'];
         expect(garrisonAllowed).toContain('armoury');
         expect(garrisonAllowed).toContain('commander');
@@ -66,35 +67,35 @@ describe('PLACEMENT_RULES', () => {
 });
 
 describe('CONVERSION_RULES', () => {
-    test('spymaster converts garrison to legion_barrack', () => {
+    test('[007] spymaster converts garrison to legion_barrack', () => {
         expect(CONVERSION_RULES['spymaster']['garrison']).toBe('legion_barrack');
     });
 
-    test('synthflesh_lab converts garrison to transcendent_barracks', () => {
+    test('[008] synthflesh_lab converts garrison to transcendent_barracks', () => {
         expect(CONVERSION_RULES['synthflesh_lab']['garrison']).toBe('transcendent_barracks');
     });
 
-    test('synthflesh_lab converts legion_barrack to transcendent_barracks', () => {
+    test('[009] synthflesh_lab converts legion_barrack to transcendent_barracks', () => {
         expect(CONVERSION_RULES['synthflesh_lab']['legion_barrack']).toBe('transcendent_barracks');
     });
 });
 
 describe('isValidPlacement - basic placement', () => {
-    test('can place garrison next to path (center cell)', () => {
+    test('[010] can place garrison next to path (locked cell)', () => {
         const gridData = createEmptyGrid();
-        // Cell 31 is directly above the locked center cell (40)
-        const result = isValidPlacement(31, 'garrison', gridData);
+        // Cell 67 is directly above the locked cell (76)
+        const result = isValidPlacement(67, 'garrison', gridData);
         expect(result).toBe(true);
     });
 
-    test('cannot place room with no adjacent rooms', () => {
+    test('[011] cannot place room with no adjacent rooms', () => {
         const gridData = createEmptyGrid();
         // Cell 0 is corner with no adjacent rooms
         const result = isValidPlacement(0, 'garrison', gridData);
         expect(result).toBe(false);
     });
 
-    test('can place armoury next to garrison', () => {
+    test('[012] can place armoury next to garrison', () => {
         const gridData = createEmptyGrid();
         // Place garrison at cell 31 (above center)
         gridData[31] = createCell('garrison');
@@ -103,27 +104,27 @@ describe('isValidPlacement - basic placement', () => {
         expect(result).toBe(true);
     });
 
-    test('cannot place spymaster directly next to path', () => {
+    test('[013] cannot place spymaster directly next to path', () => {
         const gridData = createEmptyGrid();
         // Spymaster can only connect to legion_barrack, not directly to path
-        // Cell 31 is next to path but spymaster's PLACEMENT_RULES only allow legion_barrack and path
+        // Cell 67 is next to path but spymaster's PLACEMENT_RULES only allow legion_barrack and path
         // Wait - spymaster DOES allow path in its placement rules
-        const result = isValidPlacement(31, 'spymaster', gridData);
+        const result = isValidPlacement(67, 'spymaster', gridData);
         expect(result).toBe(true);
     });
 });
 
 describe('isValidPlacement - conversions', () => {
-    test('spymaster can be placed next to garrison (will convert it)', () => {
+    test('[014] spymaster can be placed next to garrison (will convert it)', () => {
         const gridData = createEmptyGrid();
-        // Place garrison at cell 31
-        gridData[31] = createCell('garrison');
-        // Spymaster at cell 22 should be able to convert garrison to legion_barrack
-        const result = isValidPlacement(22, 'spymaster', gridData);
+        // Place garrison at cell 67 (above locked cell 76)
+        gridData[67] = createCell('garrison');
+        // Spymaster at cell 58 (above garrison) should be able to convert garrison to legion_barrack
+        const result = isValidPlacement(58, 'spymaster', gridData);
         expect(result).toBe(true);
     });
 
-    test('spymaster converts garrison to legion_barrack - check rule symmetry', () => {
+    test('[015] spymaster converts garrison to legion_barrack - check rule symmetry', () => {
         // When spymaster converts garrison to legion_barrack:
         // - legion_barrack must allow spymaster (yes: ['armoury', 'spymaster', 'path'])
         // - spymaster must allow legion_barrack (yes: ['legion_barrack', 'path'])
@@ -137,57 +138,57 @@ describe('isValidPlacement - the spymaster/garrison/legion_barrack scenario', ()
      * Scenario: What happens when spymaster tries to convert garrison to legion_barrack
      * but there's already a legion_barrack adjacent to the garrison?
      * 
-     * Grid layout (9x9, center=40 is path):
-     *   Row 2: ...21,22,23...
-     *   Row 3: ...30,31,32...
-     *   Row 4: ...39,40,41...  (40 is path/center)
+     * Grid layout (9x9, locked cell=76 at row 8, col 4):
+     *   Row 6: ...57,58,59...
+     *   Row 7: ...66,67,68...
+     *   Row 8: ...75,76,77...  (76 is locked path)
      * 
      * Setup:
-     *   - Cell 40: path (locked center)
-     *   - Cell 31: garrison (above path)  
-     *   - Cell 22: legion_barrack (above garrison)
+     *   - Cell 76: path (locked)
+     *   - Cell 67: garrison (above path)  
+     *   - Cell 58: legion_barrack (above garrison)
      *   
-     * If spymaster is placed at cell 32, it would convert garrison to legion_barrack.
-     * But then cells 22 (legion_barrack) and 31 (converted legion_barrack) would be
+     * If spymaster is placed at cell 68, it would convert garrison to legion_barrack.
+     * But then cells 58 (legion_barrack) and 67 (converted legion_barrack) would be
      * adjacent, and PLACEMENT_RULES['legion_barrack'] = ['armoury', 'spymaster', 'path']
      * does NOT allow legion_barrack to be adjacent to another legion_barrack.
      * 
      * Therefore, this placement should be BLOCKED to prevent breaking the chain.
      */
-    test('cannot place spymaster when conversion would create invalid adjacent legion_barracks', () => {
+    test('[016] cannot place spymaster when conversion would create invalid adjacent legion_barracks', () => {
         const gridData = createEmptyGrid();
         
-        // Setup: garrison above path
-        gridData[31] = createCell('garrison');
+        // Setup: garrison above locked path
+        gridData[67] = createCell('garrison');
         
         // Setup: legion_barrack above garrison
-        gridData[22] = createCell('legion_barrack', null, 'spymaster');
+        gridData[58] = createCell('legion_barrack', null, 'spymaster');
         
-        // Try to place spymaster at cell 32 (right of garrison)
+        // Try to place spymaster at cell 68 (right of garrison)
         // This would convert garrison to legion_barrack, creating two adjacent legion_barracks
         // which is NOT allowed by placement rules
-        const result = isValidPlacement(32, 'spymaster', gridData);
+        const result = isValidPlacement(68, 'spymaster', gridData);
         expect(result).toBe(false);
     });
 
-    test('CAN place spymaster next to garrison when no conflicting legion_barrack', () => {
+    test('[017] CAN place spymaster next to garrison when no conflicting legion_barrack', () => {
         const gridData = createEmptyGrid();
         
         // Setup: just garrison above path, no legion_barrack nearby
-        gridData[31] = createCell('garrison');
+        gridData[67] = createCell('garrison');
         
-        // Spymaster at cell 32 can convert garrison to legion_barrack
+        // Spymaster at cell 68 can convert garrison to legion_barrack
         // No conflict because garrison's other neighbors are just path
-        const result = isValidPlacement(32, 'spymaster', gridData);
+        const result = isValidPlacement(68, 'spymaster', gridData);
         expect(result).toBe(true);
     });
 
-    test('spymaster next to garrison converts it to legion_barrack', () => {
+    test('[018] spymaster next to garrison converts it to legion_barrack', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('garrison');
+        gridData[67] = createCell('garrison');
         
-        // Cell 32 is to the right of garrison
-        const result = isValidPlacement(32, 'spymaster', gridData);
+        // Cell 68 is to the right of garrison
+        const result = isValidPlacement(68, 'spymaster', gridData);
         expect(result).toBe(true);
     });
 });
@@ -197,85 +198,85 @@ describe('isValidPlacement - end-of-chain rooms', () => {
      * End-of-chain rooms like golem_works, flesh_surgeon should be placeable
      * even though they don't upgrade or convert anything.
      */
-    test('golem_works can be placed next to smithy', () => {
+    test('[019] golem_works can be placed next to smithy', () => {
         const gridData = createEmptyGrid();
-        // Place smithy adjacent to path
-        gridData[31] = createCell('smithy');
-        // golem_works should be placeable next to smithy
-        const result = isValidPlacement(22, 'golem_works', gridData);
+        // Place smithy adjacent to locked path (cell 67)
+        gridData[67] = createCell('smithy');
+        // golem_works should be placeable next to smithy (cell 58)
+        const result = isValidPlacement(58, 'golem_works', gridData);
         expect(result).toBe(true);
     });
 
-    test('flesh_surgeon can be placed next to synthflesh_lab', () => {
+    test('[020] flesh_surgeon can be placed next to synthflesh_lab', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('synthflesh_lab');
-        const result = isValidPlacement(22, 'flesh_surgeon', gridData);
+        gridData[67] = createCell('synthflesh_lab');
+        const result = isValidPlacement(58, 'flesh_surgeon', gridData);
         expect(result).toBe(true);
     });
 });
 
 describe('isValidPlacement - sacrificial_chamber uniqueness', () => {
-    test('can place sacrificial_chamber when none exists', () => {
+    test('[021] can place sacrificial_chamber when none exists', () => {
         const gridData = createEmptyGrid();
-        const result = isValidPlacement(31, 'sacrificial_chamber', gridData);
+        const result = isValidPlacement(67, 'sacrificial_chamber', gridData);
         expect(result).toBe(true);
     });
 
-    test('cannot place second sacrificial_chamber', () => {
+    test('[022] cannot place second sacrificial_chamber', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('sacrificial_chamber');
-        // Try to place another at cell 49 (below center)
-        const result = isValidPlacement(49, 'sacrificial_chamber', gridData);
+        gridData[67] = createCell('sacrificial_chamber');
+        // Try to place another at cell 75 (left of locked cell 76)
+        const result = isValidPlacement(75, 'sacrificial_chamber', gridData);
         expect(result).toBe(false);
     });
 });
 
 describe('isValidPlacement - generator rules', () => {
-    test('generator can be placed next to path', () => {
+    test('[023] generator can be placed next to path', () => {
         const gridData = createEmptyGrid();
-        const result = isValidPlacement(31, 'generator', gridData);
+        const result = isValidPlacement(67, 'generator', gridData);
         expect(result).toBe(true);
     });
 
-    test('generator cannot be placed away from path', () => {
+    test('[024] generator cannot be placed away from path', () => {
         const gridData = createEmptyGrid();
         // Place some rooms to create a chain
-        gridData[31] = createCell('thaumaturge');
-        gridData[22] = createCell('alchemy_lab');
+        gridData[67] = createCell('thaumaturge');
+        gridData[58] = createCell('alchemy_lab');
         // Try to place generator next to alchemy_lab but not adjacent to path
-        // Cell 13 is above cell 22
-        const result = isValidPlacement(13, 'generator', gridData);
+        // Cell 49 is above cell 58
+        const result = isValidPlacement(49, 'generator', gridData);
         expect(result).toBe(false);
     });
 });
 
 describe('wouldConversionBreakChain', () => {
-    test('conversion does not break chain when no other adjacent rooms', () => {
+    test('[025] conversion does not break chain when no other adjacent rooms', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('garrison');
+        gridData[67] = createCell('garrison');
         // Converting garrison to legion_barrack when only adjacent to path should be fine
-        const result = wouldConversionBreakChain(31, 'legion_barrack', gridData);
+        const result = wouldConversionBreakChain(67, 'legion_barrack', gridData);
         expect(result).toBe(false);
     });
 
-    test('conversion breaks chain when adjacent room incompatible', () => {
+    test('[026] conversion breaks chain when adjacent room incompatible', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('garrison');
-        gridData[22] = createCell('commander'); // commander allows garrison but not legion_barrack
+        gridData[67] = createCell('garrison');
+        gridData[58] = createCell('commander'); // commander allows garrison but not legion_barrack
         
         // Converting garrison to legion_barrack would break connection with commander
         // commander's allowed: ['garrison', 'transcendent_barracks', 'path']
         // legion_barrack's allowed: ['armoury', 'spymaster', 'path']
-        const result = wouldConversionBreakChain(31, 'legion_barrack', gridData);
+        const result = wouldConversionBreakChain(67, 'legion_barrack', gridData);
         expect(result).toBe(true);
     });
 });
 
 describe('getValidChainExtensions', () => {
-    test('returns rooms that can be placed next to path', () => {
+    test('[027] returns rooms that can be placed next to path', () => {
         const gridData = createEmptyGrid();
-        // Cell 31 is adjacent to locked cell (path)
-        const validRooms = getValidChainExtensions(31, gridData);
+        // Cell 67 is adjacent to locked cell (76) - above it
+        const validRooms = getValidChainExtensions(67, gridData);
         
         // Should include rooms that path allows
         expect(validRooms.has('garrison')).toBe(true);
@@ -283,15 +284,59 @@ describe('getValidChainExtensions', () => {
         expect(validRooms.has('generator')).toBe(true);
     });
 
-    test('returns upgrade rooms for adjacent upgradeable room', () => {
+    test('[028] returns upgrade rooms for adjacent upgradeable room', () => {
         const gridData = createEmptyGrid();
-        gridData[31] = createCell('garrison');
+        gridData[67] = createCell('garrison');
         
-        // Cell 22 is above garrison
-        const validRooms = getValidChainExtensions(22, gridData);
+        // Cell 58 is above garrison
+        const validRooms = getValidChainExtensions(58, gridData);
         
         // Should include rooms that can upgrade garrison (armoury, commander)
         expect(validRooms.has('armoury')).toBe(true);
         expect(validRooms.has('commander')).toBe(true);
+    });
+});
+
+describe('Complex chain scenario with spymaster', () => {
+    /**
+     * Scenario: Building a complex chain with spymaster conversion
+     * 
+     * Grid layout (locked cell=76 at row 8, col 4):
+     *   Row 7: 63,64,65,66,67...
+     *   Row 8: 72,73,74,75,76,77...  (76 is locked path)
+     * 
+     * Setup:
+     *   - Cell 76: path (locked)
+     *   - Cell 75: spymaster (placed first, left of path)
+     *   - Cell 74: garrison -> converts to legion_barrack (left of spymaster)
+     *   - Cell 65: armoury (above legion_barrack)
+     *   - Cell 64: garrison (left of armoury)
+     *   
+     * Test: Spymaster should NOT be placeable at cell 73 (left of legion_barrack)
+     * because cell 74 (legion_barrack) was converted BY spymaster, blocking 
+     * additional spymaster placements adjacent to it.
+     */
+    test('[029] spymaster can be placed in complex chain scenario', () => {
+        const gridData = createEmptyGrid();
+        
+        // Step 1: Place spymaster at 75 (adjacent to locked path at 76)
+        gridData[75] = createCell('spymaster');
+        
+        // Step 2: Place garrison at 74 - should convert to legion_barrack
+        // (spymaster converts adjacent garrison to legion_barrack)
+        gridData[74] = createCell('legion_barrack', null, 'spymaster');
+        
+        // Step 3: Place armoury at 65 (above legion_barrack at 74)
+        // legion_barrack allows: ['armoury', 'spymaster', 'path']
+        gridData[65] = createCell('armoury');
+        
+        // Step 4: Place garrison at 64 (left of armoury at 65)
+        // armoury allows: ['garrison', 'smithy', 'alchemy_lab', 'legion_barrack', 'path']
+        gridData[64] = createCell('garrison');
+        
+        // Step 5: Verify spymaster CAN be placed at 73 (left of legion_barrack at 74)
+        // legion_barrack at 74 allows spymaster per PLACEMENT_RULES
+        const result = isValidPlacement(73, 'spymaster', gridData);
+        expect(result).toBe(true);
     });
 });
