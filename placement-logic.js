@@ -187,6 +187,51 @@ function wouldPlacementBreakAnyChain(index, roomId, gridData) {
 }
 
 /**
+ * Check if placing a room would try to upgrade an adjacent room that is already at max level.
+ * @param {number} index - The cell index
+ * @param {string} roomId - The room ID to place
+ * @param {Array} gridData - The current grid state
+ * @returns {boolean} True if placement would exceed max level
+ */
+function wouldUpgradeExceedMaxLevel(index, roomId, gridData) {
+    const adjacentIndices = getAdjacentIndices(index);
+    
+    for (const adjIndex of adjacentIndices) {
+        if (gridData[adjIndex] !== null) {
+            const adjacentObjectId = gridData[adjIndex].object.id;
+            const upgradeRule = UPGRADE_RULES[adjacentObjectId];
+            
+            if (upgradeRule) {
+                const currentLevel = gridData[adjIndex].level || 1;
+                
+                if (upgradeRule.type === 'count') {
+                    // Check if this room type can upgrade the adjacent room
+                    const objectIdsToCount = upgradeRule.objectIds || upgradeRule.upgradedBy || [];
+                    if (objectIdsToCount.includes(roomId)) {
+                        const maxLevel = upgradeRule.maxLevel || 3;
+                        // Check if already at max level
+                        if (currentLevel >= maxLevel) {
+                            return true;
+                        }
+                    }
+                } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
+                    // Check if this room type can upgrade the adjacent room
+                    if (upgradeRule.upgradedBy.includes(roomId)) {
+                        const maxLevel = 3; // List-type upgrades max at level 3
+                        // Check if already at max level
+                        if (currentLevel >= maxLevel) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
  * Get all rooms that can extend a chain starting from a given room.
  * @param {string} roomId - The room ID
  * @returns {Array<string>} Array of room IDs that can be placed next to the given room
@@ -242,6 +287,11 @@ function isValidPlacement(index, selectedRoomId, gridData) {
 
     // Check if placing this room would break any existing chain via conversions
     if (wouldPlacementBreakAnyChain(index, selectedRoomId, gridData)) {
+        return false;
+    }
+
+    // Check if placing this room would try to upgrade an adjacent room that is already at max level
+    if (wouldUpgradeExceedMaxLevel(index, selectedRoomId, gridData)) {
         return false;
     }
 
@@ -376,6 +426,7 @@ module.exports = {
     getAdjacentIndices,
     wouldConversionBreakChain,
     wouldPlacementBreakAnyChain,
+    wouldUpgradeExceedMaxLevel,
     getValidChainExtensions,
     isValidPlacement,
     createEmptyGrid,

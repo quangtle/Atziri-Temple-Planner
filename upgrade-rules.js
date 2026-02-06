@@ -15,31 +15,33 @@ const UPGRADE_RULES = {
     },
     'generator': {
         type: 'list',
-        upgradedBy: ['thaumaturge']  // generator is upgraded by thaumaturge
+        upgradedBy: ['thaumaturge','sacrificial_chamber']  // generator is upgraded by thaumaturge or sacrificial chamber
     },
     'corruption_chamber': {
         type: 'list',
         upgradedBy: ['thaumaturge', 'sacrificial_chamber']  // corruption chamber is upgraded by thaumaturge or sacrificial chamber
     },
     'alchemy_lab': {
-        type: 'list',
-        upgradedBy: ['thaumaturge']  // alchemy lab is upgraded by thaumaturge
+        type: 'count',
+        upgradedBy: ['thaumaturge'],  // alchemy lab is upgraded by thaumaturge
+        maxLevel: 2  // maximum level 2 (2 thaumaturge adjacent)
     },
     'commander': {
         type: 'count',
-        objectIds: ['garrison', 'transcendent_barracks']  // commander is upgraded by count of garrison or transcendent barracks
+        objectIds: ['garrison', 'transcendent_barracks'],  // commander is upgraded by count of garrison or transcendent barracks
+        maxLevel: 3  // maximum level 3 (3 garrison/transcendent_barracks adjacent)
     },
     'transcendent_barracks': {
         type: 'list',
-        upgradedBy: ['transcendent_barracks']  // transcendent barracks is upgraded by transcendent barracks itself
+        upgradedBy: ['synthflesh_lab','generator']  // transcendent barracks is upgraded by transcendent barracks itself
     },
     'synthflesh_lab': {
         type: 'list',
-        upgradedBy: ['flesh_surgeon']  // synthflesh lab is upgraded by flesh surgeon
+        upgradedBy: ['flesh_surgeon','generator']  // synthflesh lab is upgraded by flesh surgeon
     },
     'smithy': {
         type: 'list',
-        upgradedBy: ['golem_works']  // smithy is upgraded by golem_works
+        upgradedBy: ['golem_works','generator']  // smithy is upgraded by golem_works
     },
     'flesh_surgeon': {
         type: 'list',
@@ -48,6 +50,11 @@ const UPGRADE_RULES = {
     'thaumaturge': {
         type: 'list',
         upgradedBy:['sacrificial_chamber'] // thaumaturge is upgraded by sacrificial chamber
+    },
+    'golem_works': {
+        type:'count',
+        objectIds: ['generator'],
+        maxLevel: 2  // golem works is upgraded by count of generator
     }
 };
 

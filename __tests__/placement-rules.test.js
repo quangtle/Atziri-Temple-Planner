@@ -8,6 +8,7 @@ const {
     getAdjacentIndices,
     wouldConversionBreakChain,
     wouldPlacementBreakAnyChain,
+    wouldUpgradeExceedMaxLevel,
     isValidPlacement,
     getValidChainExtensions,
     createEmptyGrid,
@@ -374,6 +375,85 @@ describe('Complex chain scenario with spymaster', () => {
         // garrison allows: ['armoury', 'commander', 'path']
         // Even though garrison was upgraded by commander, another commander should be placeable
         const result = isValidPlacement(73, 'commander', gridData);
+        expect(result).toBe(true);
+    });
+});
+
+describe('Max level blocking - alchemy_lab', () => {
+    /**
+     * Alchemy lab has maxLevel 2 from thaumaturge upgrades.
+     * Once alchemy lab is at level 2, no more thaumaturge can be placed next to it.
+     */
+    test('[031] cannot place thaumaturge next to alchemy lab already at max level', () => {
+        const gridData = createEmptyGrid();
+        
+        // Setup: alchemy lab at level 2 (max) upgraded by 2 thaumaturges
+        gridData[67] = createCell('alchemy_lab');
+        gridData[67].level = 2;
+        gridData[67].upgraded = true;
+        gridData[67].upgradedBy = ['thaumaturge', 'thaumaturge'];
+        
+        // Try to place a third thaumaturge next to the maxed alchemy lab
+        const result = isValidPlacement(58, 'thaumaturge', gridData);
+        expect(result).toBe(false);
+    });
+
+    test('[032] can place thaumaturge next to alchemy lab not at max level', () => {
+        const gridData = createEmptyGrid();
+        
+        // Setup: alchemy lab at level 1 (not max)
+        gridData[67] = createCell('alchemy_lab');
+        gridData[67].level = 1;
+        gridData[67].upgraded = false;
+        
+        // Should be able to place thaumaturge
+        const result = isValidPlacement(58, 'thaumaturge', gridData);
+        expect(result).toBe(true);
+    });
+
+    test('[033] wouldUpgradeExceedMaxLevel returns true for alchemy lab at max', () => {
+        const gridData = createEmptyGrid();
+        
+        // Setup: alchemy lab at level 2 (max)
+        gridData[67] = createCell('alchemy_lab');
+        gridData[67].level = 2;
+        gridData[67].upgraded = true;
+        
+        const result = wouldUpgradeExceedMaxLevel(58, 'thaumaturge', gridData);
+        expect(result).toBe(true);
+    });
+});
+
+describe('Max level blocking - commander', () => {
+    /**
+     * Commander has maxLevel 3 from garrison/transcendent_barracks upgrades.
+     * Once commander is at level 3, no more garrison can be placed next to it.
+     */
+    test('[034] cannot place garrison next to commander already at max level', () => {
+        const gridData = createEmptyGrid();
+        
+        // Setup: commander at level 3 (max) upgraded by 3 garrisons
+        gridData[67] = createCell('commander');
+        gridData[67].level = 3;
+        gridData[67].upgraded = true;
+        gridData[67].upgradedBy = ['garrison', 'garrison', 'garrison'];
+        
+        // Try to place a fourth garrison next to the maxed commander
+        const result = isValidPlacement(58, 'garrison', gridData);
+        expect(result).toBe(false);
+    });
+
+    test('[035] can place garrison next to commander not at max level', () => {
+        const gridData = createEmptyGrid();
+        
+        // Setup: commander at level 2 (not max)
+        gridData[67] = createCell('commander');
+        gridData[67].level = 2;
+        gridData[67].upgraded = true;
+        gridData[67].upgradedBy = ['garrison', 'garrison'];
+        
+        // Should be able to place garrison
+        const result = isValidPlacement(58, 'garrison', gridData);
         expect(result).toBe(true);
     });
 });

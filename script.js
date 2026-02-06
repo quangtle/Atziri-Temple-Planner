@@ -468,10 +468,10 @@ function applyUpgrades(index) {
     
     const upgradeRule = UPGRADE_RULES[placedObject.id];
     
-    if (upgradeRule) {
+        if (upgradeRule) {
         if (upgradeRule.type === 'count') {
             let count = 0;
-            const objectIdsToCount = upgradeRule.objectIds;
+            const objectIdsToCount = upgradeRule.objectIds || upgradeRule.upgradedBy;
             
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null && objectIdsToCount.includes(gridData[adjIndex].object.id)) {
@@ -480,7 +480,8 @@ function applyUpgrades(index) {
             });
             
             if (count > 0) {
-                gridData[index].level = count;
+                const maxLevel = upgradeRule.maxLevel || 3;
+                gridData[index].level = Math.min(count, maxLevel);
                 gridData[index].upgraded = true;
             }
         } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
@@ -568,6 +569,45 @@ function wouldPlacementBreakAnyChain(index, roomId) {
             if (convertedToId) {
                 if (wouldConversionBreakChain(adjIndex, convertedToId)) {
                     return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// Check if placing a room would try to upgrade an adjacent room that is already at max level
+function wouldUpgradeExceedMaxLevel(index, roomId) {
+    const adjacentIndices = getAdjacentIndices(index);
+    
+    for (const adjIndex of adjacentIndices) {
+        if (gridData[adjIndex] !== null) {
+            const adjacentObjectId = gridData[adjIndex].object.id;
+            const upgradeRule = UPGRADE_RULES[adjacentObjectId];
+            
+            if (upgradeRule) {
+                const currentLevel = gridData[adjIndex].level || 1;
+                
+                if (upgradeRule.type === 'count') {
+                    // Check if this room type can upgrade the adjacent room
+                    const objectIdsToCount = upgradeRule.objectIds || upgradeRule.upgradedBy || [];
+                    if (objectIdsToCount.includes(roomId)) {
+                        const maxLevel = upgradeRule.maxLevel || 3;
+                        // Check if already at max level
+                        if (currentLevel >= maxLevel) {
+                            return true;
+                        }
+                    }
+                } else if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
+                    // Check if this room type can upgrade the adjacent room
+                    if (upgradeRule.upgradedBy.includes(roomId)) {
+                        const maxLevel = 3; // List-type upgrades max at level 3
+                        // Check if already at max level
+                        if (currentLevel >= maxLevel) {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -694,7 +734,10 @@ function isValidPlacement(index) {
         return false;
     }
 
-
+    // Check if placing this room would try to upgrade an adjacent room that is already at max level
+    if (wouldUpgradeExceedMaxLevel(index, selectedRoomId)) {
+        return false;
+    }
 
     // Check if all adjacent existing rooms allow this room to be placed
     // (connections must be symmetric - both rooms must allow each other)
