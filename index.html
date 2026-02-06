@@ -35,6 +35,7 @@
         <div class="controls">
             <button class="save-btn" onclick="showSaveModal()">Save Layout</button>
             <button class="load-btn" onclick="showLoadModal()">Load Layout</button>
+            <button class="share-btn" onclick="shareLayout()">Share</button>
             <button class="export-btn" onclick="exportLayout()">Export JSON</button>
             <button class="import-btn" onclick="document.getElementById('import-file').click()">Import JSON</button>
             <input type="file" id="import-file" accept=".json" style="display: none" onchange="importLayout(event)">
@@ -80,6 +81,24 @@
             </div>
             <div class="modal-body">
                 <div id="saved-layouts-list" class="saved-layouts-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for sharing layout -->
+    <div class="modal" id="share-modal">
+        <div class="modal-content share-modal-content">
+            <div class="modal-header">
+                <h2>Share Layout</h2>
+                <button class="modal-close" onclick="closeShareModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Copy this link to share your layout:</p>
+                <div class="share-url-container">
+                    <input type="text" id="share-url" class="share-url-input" readonly>
+                    <button id="share-copy-btn" class="share-copy-btn" onclick="copyShareUrl()">Copy</button>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Anyone with this link can view and edit your layout.</p>
             </div>
         </div>
     </div>

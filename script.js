@@ -795,6 +795,7 @@ function isValidPlacement(index) {
 // Create grid cells
 function initializeGrid() {
     gridContainer.innerHTML = '';
+    
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -802,9 +803,13 @@ function initializeGrid() {
         
         if (i === LOCKED_CELL_INDEX) {
             cell.classList.add('locked');
-        }
-        
-        if (gridData[i]) {
+            const imgElement = document.createElement('img');
+            imgElement.src = 'resources/images/path.png';
+            imgElement.alt = 'Locked Path';
+            imgElement.style.width = '100%';
+            imgElement.style.height = '100%';
+            cell.appendChild(imgElement);
+        } else if (gridData[i]) {
             const imgElement = document.createElement('img');
             imgElement.src = gridData[i].object.image;
             imgElement.alt = gridData[i].object.name;
@@ -1357,3 +1362,10 @@ function drawConnectionLine(index1, index2) {
 initializeObjectGrid();
 initializeGrid();
 initializeLayoutManager();
+
+// Load layout from URL hash if present
+if (window.location.hash) {
+    setTimeout(() => {
+        loadLayoutFromHash();
+    }, 100);
+}
