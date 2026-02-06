@@ -694,25 +694,7 @@ function isValidPlacement(index) {
         return false;
     }
 
-    // Check if placing this room would try to upgrade an adjacent room that has already been upgraded by this room type
-    for (const adjIndex of adjacentIndices) {
-        if (gridData[adjIndex] !== null) {
-            const adjacentCell = gridData[adjIndex];
-            const adjacentObjectId = adjacentCell.object.id;
-            const adjacentUpgradeRule = UPGRADE_RULES[adjacentObjectId];
 
-            // Check if the adjacent room can be upgraded by the selected room type
-            if (adjacentUpgradeRule && adjacentUpgradeRule.type === 'list' &&
-                Array.isArray(adjacentUpgradeRule.upgradedBy) &&
-                adjacentUpgradeRule.upgradedBy.includes(selectedRoomId)) {
-                // Check if the adjacent room has already been upgraded by this room type
-                // Note: Only check upgradedBy, NOT convertedBy - conversions are different from upgrades
-                if (adjacentCell.upgradedBy && adjacentCell.upgradedBy.includes(selectedRoomId)) {
-                    return false;
-                }
-            }
-        }
-    }
 
     // Check if all adjacent existing rooms allow this room to be placed
     // (connections must be symmetric - both rooms must allow each other)

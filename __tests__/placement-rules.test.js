@@ -339,4 +339,41 @@ describe('Complex chain scenario with spymaster', () => {
         const result = isValidPlacement(73, 'spymaster', gridData);
         expect(result).toBe(true);
     });
+
+    test('[030] commander can be placed next to garrison it upgraded', () => {
+        /**
+         * Scenario: Commander upgrades garrison, then another commander can be placed
+         * 
+         * Grid layout (locked cell=76 at row 8, col 4):
+         *   Row 8: 72,73,74,75,76,77...  (76 is locked path)
+         * 
+         * Setup:
+         *   - Cell 76: path (locked)
+         *   - Cell 75: commander (placed first, left of path)
+         *   - Cell 74: garrison (left of commander, gets upgraded to level 2)
+         *   
+         * Test: Commander should be placeable at cell 73 (left of garrison at 74)
+         * even though the garrison was upgraded by commander. Upgrades should not
+         * block additional placements of the upgrading room type.
+         */
+        const gridData = createEmptyGrid();
+        
+        // Step 1: Place commander at 75 (adjacent to locked path at 76)
+        gridData[75] = createCell('commander');
+        
+        // Step 2: Place garrison at 74 (left of commander)
+        // commander allows: ['garrison', 'transcendent_barracks', 'path']
+        // garrison should be upgraded by adjacent commander
+        gridData[74] = createCell('garrison');
+        // Simulate the upgrade: garrison at 74 is upgraded by commander at 75
+        gridData[74].level = 2;
+        gridData[74].upgraded = true;
+        gridData[74].upgradedBy = ['commander'];
+        
+        // Step 3: Verify commander CAN be placed at 73 (left of garrison at 74)
+        // garrison allows: ['armoury', 'commander', 'path']
+        // Even though garrison was upgraded by commander, another commander should be placeable
+        const result = isValidPlacement(73, 'commander', gridData);
+        expect(result).toBe(true);
+    });
 });
