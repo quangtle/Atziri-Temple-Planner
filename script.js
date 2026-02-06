@@ -11,7 +11,7 @@ function toRomanNumeral(num) {
     return romanNumerals[Math.min(num, 3)] || '';
 }
 
-let selectedRoom = ROOMS[0];
+let selectedRoom = null;
 
 const LOCKED_CELL_INDEX = 8 * 9 + 4;
 
@@ -305,7 +305,7 @@ function initializeObjectGrid() {
         imgElement.style.height = '100%';
         btn.appendChild(imgElement);
         
-        if (obj.name === selectedRoom.name) {
+        if (selectedRoom && obj.id === selectedRoom.id) {
             btn.classList.add('selected');
         }
         
@@ -652,6 +652,10 @@ function getValidChainExtensions(index) {
 
 // Check if placement is valid
 function isValidPlacement(index) {
+    if (selectedRoom === null) {
+        return false;
+    }
+    
     const selectedRoomId = selectedRoom.id;
 
     if (selectedRoomId === 'sacrificial_chamber') {
