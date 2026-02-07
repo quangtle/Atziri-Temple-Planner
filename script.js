@@ -739,18 +739,85 @@ function isValidPlacement(index) {
         return false;
     }
 
-    // Check if all adjacent existing rooms allow this room to be placed
-    // (connections must be symmetric - both rooms must allow each other)
+    // Find the chain this placement would join
+    // by looking for any adjacent path or tracing back from adjacent rooms
+    let targetChainPathIndex = null;
+    
+    for (const adjIndex of adjacentIndices) {
+        if (adjIndex === LOCKED_CELL_INDEX) {
+            // Adjacent to locked path
+            targetChainPathIndex = LOCKED_CELL_INDEX;
+            break;
+        } else if (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path') {
+            // Adjacent to a path cell
+            targetChainPathIndex = adjIndex;
+            break;
+        }
+    }
+    
+    // If not directly adjacent to a path, find which chain(s) we can actually connect to
+    if (targetChainPathIndex === null) {
+        // Build a map of chains we can connect to
+        const connectableChains = new Set();
+        
+        for (const adjIndex of adjacentIndices) {
+            if (gridData[adjIndex] !== null && gridData[adjIndex].object.id !== 'path') {
+                const adjacentObjectId = gridData[adjIndex].object.id;
+                const adjChainTrace = traceChainToPath(adjIndex);
+                
+                if (adjChainTrace !== null) {
+                    // Check if selectedRoom can connect to this adjacent room
+                    const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
+                    if (adjAllowedRooms.includes(selectedRoomId)) {
+                        // Can connect to this room, so we can join its chain
+                        connectableChains.add(adjChainTrace.pathIndex);
+                    }
+                    
+                    // Also check conversion rules
+                    const selectedConversionRule = CONVERSION_RULES[selectedRoomId];
+                    if (selectedConversionRule && selectedConversionRule[adjacentObjectId]) {
+                        // Selected room converts adjacent room, so we can join this chain
+                        connectableChains.add(adjChainTrace.pathIndex);
+                    }
+                    
+                    const adjConversionRule = CONVERSION_RULES[adjacentObjectId];
+                    if (adjConversionRule && adjConversionRule[selectedRoomId]) {
+                        // Adjacent room converts selected room, so we can join this chain
+                        connectableChains.add(adjChainTrace.pathIndex);
+                    }
+                }
+            }
+        }
+        
+        // Pick the first connectable chain we found
+        if (connectableChains.size > 0) {
+            targetChainPathIndex = connectableChains.values().next().value;
+        }
+    }
+    
+    // Validate adjacent rooms
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
+            
+            // Always skip validation for path cells (they can connect to anything)
+            if (adjacentObjectId === 'path') {
+                continue;
+            }
+            
+            // Check if this adjacent room is in the same chain as our target
+            const adjChainTrace = traceChainToPath(adjIndex);
+            if (adjChainTrace !== null && targetChainPathIndex !== null) {
+                if (adjChainTrace.pathIndex !== targetChainPathIndex) {
+                    // Different chain - skip validation
+                    continue;
+                }
+            }
+            
+            // Validate connection for rooms in the same chain
             const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
 
-            // Check if the connection is symmetrically allowed
-            // If this room is NOT in the adjacent room's allowed list, placement is invalid
-            // UNLESS there's a valid conversion that makes the connection work
             if (!adjAllowedRooms.includes(selectedRoomId)) {
-                // Check if the selected room converts the adjacent room
                 const selectedConversionRule = CONVERSION_RULES[selectedRoomId];
                 const adjConversionRule = CONVERSION_RULES[adjacentObjectId];
 
@@ -761,7 +828,6 @@ function isValidPlacement(index) {
                     const convertedToId = selectedConversionRule[adjacentObjectId];
                     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
                     const selectedAllowedRooms = PLACEMENT_RULES[selectedRoomId] || [];
-                    // Conversion is valid if converted room allows selected room AND vice versa
                     if (convertedAllowedRooms.includes(selectedRoomId) &&
                         selectedAllowedRooms.includes(convertedToId)) {
                         hasValidConversion = true;
@@ -773,7 +839,6 @@ function isValidPlacement(index) {
                     const convertedToId = adjConversionRule[selectedRoomId];
                     const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
                     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
-                    // Conversion is valid if adjacent room allows converted room AND vice versa
                     if (adjAllowedRooms.includes(convertedToId) &&
                         convertedAllowedRooms.includes(adjacentObjectId)) {
                         hasValidConversion = true;
@@ -902,15 +967,90 @@ function applyChainColorToCell(index, cellElement) {
         return;
     }
     
-    const rootPath = traceChainToPath(index);
-    if (rootPath !== null) {
-        const chainColor = getChainColor(rootPath);
+    const traceResult = traceChainToPath(index);
+    if (traceResult !== null) {
+        const chainId = `chain_${traceResult.pathIndex}_${traceResult.roomIndex}`;
+        const chainColor = getChainColor(chainId);
         cellElement.style.backgroundColor = chainColor.border;
         cellElement.style.borderColor = chainColor.header;
     }
 }
 
-// Toggle object placement on cell
+// Build and print chain representation with room numbers (e.g., "locked_path(76) -> golem_works(75) -> smithy(74)")
+function printRoomChain(cellIndex) {
+    const chain = [];
+    let currentIndex = cellIndex;
+    const visited = new Set();
+    
+    // Start from the placed room and trace back to the path
+    while (currentIndex !== null && !visited.has(currentIndex)) {
+        visited.add(currentIndex);
+        
+        if (gridData[currentIndex] === null) {
+            break;
+        }
+        
+        const roomId = gridData[currentIndex].object.id;
+        const displayName = gridData[currentIndex].object.name;
+        chain.unshift(`${displayName}(${currentIndex})`); // Add to front with room number
+        
+        // If we reached a path, stop
+        if (roomId === 'path' || currentIndex === LOCKED_CELL_INDEX) {
+            break;
+        }
+        
+        // Find the next room in the chain (trace backwards)
+        const adjacentIndices = getAdjacentIndices(currentIndex);
+        let foundNext = false;
+        
+        for (const adjIndex of adjacentIndices) {
+            if (visited.has(adjIndex) || gridData[adjIndex] === null) {
+                continue;
+            }
+            
+            const adjRoomId = gridData[adjIndex].object.id;
+            const currentRoomId = roomId;
+            
+            // Get the effective room ID (accounting for conversions)
+            let effectiveCurrentRoomId = currentRoomId;
+            if (gridData[currentIndex].convertedBy) {
+                // Current room is converted, use the conversion result
+                const conversionRule = CONVERSION_RULES[gridData[currentIndex].convertedBy];
+                if (conversionRule && conversionRule[currentRoomId]) {
+                    effectiveCurrentRoomId = conversionRule[currentRoomId];
+                }
+            }
+            
+            // Get the effective adjacent room ID (accounting for conversions)
+            let effectiveAdjRoomId = adjRoomId;
+            if (gridData[adjIndex].convertedBy) {
+                const conversionRule = CONVERSION_RULES[gridData[adjIndex].convertedBy];
+                if (conversionRule && conversionRule[adjRoomId]) {
+                    effectiveAdjRoomId = conversionRule[adjRoomId];
+                }
+            }
+            
+            // Check if this adjacent room can connect to current room (using effective IDs)
+            const adjAllowedRooms = PLACEMENT_RULES[effectiveAdjRoomId] || [];
+            if (adjAllowedRooms.includes(effectiveCurrentRoomId)) {
+                currentIndex = adjIndex;
+                foundNext = true;
+                break;
+            }
+        }
+        
+        if (!foundNext) {
+            break;
+        }
+    }
+    
+    const chainString = chain.join(' -> ');
+    console.log('Chain: ' + chainString);
+    return chainString;
+}
+
+
+
 function toggleCell(index, cellElement) {
     if (gridData[index] === null) {
         if (selectedRoom === null) {
@@ -949,6 +1089,8 @@ function toggleCell(index, cellElement) {
         applyChainColorToCell(index, cellElement);
         
         applyConversions(index);
+        
+        printRoomChain(index);
         
         applyUpgrades(index);
         
@@ -1030,7 +1172,8 @@ function clearGrid() {
     }
 }
 
-// Trace back from a cell to find its root path by following the chain
+// Trace back from a cell to find its root path and the room that directly connects to it
+// Returns { pathIndex, roomIndex } where roomIndex is the non-path room that connects to the path
 function traceChainToPath(startIndex, visited = new Set()) {
     if (visited.has(startIndex)) {
         return null;
@@ -1038,7 +1181,7 @@ function traceChainToPath(startIndex, visited = new Set()) {
     visited.add(startIndex);
     
     if (startIndex === LOCKED_CELL_INDEX) {
-        return LOCKED_CELL_INDEX;
+        return { pathIndex: LOCKED_CELL_INDEX, roomIndex: LOCKED_CELL_INDEX };
     }
     
     if (gridData[startIndex] === null) {
@@ -1046,7 +1189,7 @@ function traceChainToPath(startIndex, visited = new Set()) {
     }
     
     if (gridData[startIndex].object.id === 'path') {
-        return startIndex;
+        return { pathIndex: startIndex, roomIndex: startIndex };
     }
     
     const adjacentIndices = getAdjacentIndices(startIndex);
@@ -1054,7 +1197,7 @@ function traceChainToPath(startIndex, visited = new Set()) {
     
     for (const adjIndex of adjacentIndices) {
         if (adjIndex === LOCKED_CELL_INDEX) {
-            return LOCKED_CELL_INDEX;
+            return { pathIndex: LOCKED_CELL_INDEX, roomIndex: startIndex };
         }
         
         if (gridData[adjIndex] === null) {
@@ -1065,9 +1208,14 @@ function traceChainToPath(startIndex, visited = new Set()) {
         
         const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
         if (adjAllowedRooms.includes(currentRoomId)) {
-            const rootPath = traceChainToPath(adjIndex, visited);
-            if (rootPath !== null) {
-                return rootPath;
+            const result = traceChainToPath(adjIndex, visited);
+            if (result !== null) {
+                // If we found a path via an adjacent room, return it
+                // If the adjacent was a path room, use current room as the identifier
+                if (adjRoomId === 'path' && result.roomIndex === adjIndex) {
+                    return { pathIndex: result.pathIndex, roomIndex: startIndex };
+                }
+                return result;
             }
         }
     }
@@ -1086,17 +1234,19 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             adjacentSources.push({
                 index: adjIndex,
                 roomId: 'path',
-                rootPath: LOCKED_CELL_INDEX
+                chainId: `chain_${LOCKED_CELL_INDEX}`  // Unique identifier for this chain
             });
         } else if (gridData[adjIndex] !== null) {
             const roomId = gridData[adjIndex].object.id;
             const convertedBy = gridData[adjIndex].convertedBy;
-            const rootPath = traceChainToPath(adjIndex);
-            if (rootPath !== null) {
+            const traceResult = traceChainToPath(adjIndex);
+            if (traceResult !== null) {
+                // Create a unique chain identifier based on both the path and the entry point
+                const chainId = `chain_${traceResult.pathIndex}_${traceResult.roomIndex}`;
                 adjacentSources.push({
                     index: adjIndex,
                     roomId: roomId,
-                    rootPath: rootPath,
+                    chainId: chainId,
                     convertedBy: convertedBy
                 });
             }
@@ -1108,7 +1258,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
     placeableRooms.forEach(room => {
         const chainsForRoom = new Set();
         
-        adjacentSources.forEach(({ index: adjIndex, roomId, rootPath, convertedBy }) => {
+        adjacentSources.forEach(({ index: adjIndex, roomId, chainId, convertedBy }) => {
             // Skip if this room type is the one that converted the adjacent room
             if (convertedBy === room.id) {
                 return;
@@ -1116,7 +1266,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             
             const allowedRooms = PLACEMENT_RULES[roomId] || [];
             if (allowedRooms.includes(room.id)) {
-                chainsForRoom.add(rootPath);
+                chainsForRoom.add(chainId);
             }
             
             if (adjIndex !== LOCKED_CELL_INDEX) {
@@ -1129,7 +1279,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
                     if (convertedAllowedRooms.includes(room.id) && 
                         roomAllowedRooms.includes(convertedToId) &&
                         !wouldConversionBreakChain(adjIndex, convertedToId)) {
-                        chainsForRoom.add(rootPath);
+                        chainsForRoom.add(chainId);
                     }
                 }
                 
@@ -1139,7 +1289,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
                     const convertedToId = adjConversionRule[room.id];
                     // Check if the converted result is allowed by adjacent room
                     if (allowedRooms.includes(convertedToId)) {
-                        chainsForRoom.add(rootPath);
+                        chainsForRoom.add(chainId);
                     }
                 }
             }
@@ -1158,11 +1308,11 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
         
         if (!chains || chains.size === 0) {
         } else if (chains.size === 1) {
-            const rootPath = chains.values().next().value;
-            if (!singleChainGroups.has(rootPath)) {
-                singleChainGroups.set(rootPath, []);
+            const chainId = chains.values().next().value;
+            if (!singleChainGroups.has(chainId)) {
+                singleChainGroups.set(chainId, []);
             }
-            singleChainGroups.get(rootPath).push(room);
+            singleChainGroups.get(chainId).push(room);
         } else {
             multiChainRooms.push(room);
         }
@@ -1209,11 +1359,18 @@ function getContrastingTextColor(bgColor) {
     return getLuminance(bgColor) > 0.5 ? '#000000' : '#ffffff';
 }
 
-// Get display name for a chain's root path
-function getChainDisplayName(rootPathIndex) {
-    const row = Math.floor(rootPathIndex / GRID_SIZE);
-    const col = rootPathIndex % GRID_SIZE;
-    return `Path (${row}, ${col})`;
+// Get display name for a chain's ID (format: "chain_pathIndex_roomIndex")
+function getChainDisplayName(chainId) {
+    // Parse the chain ID to extract path and room indices
+    const parts = chainId.split('_');
+    if (parts.length >= 3) {
+        const pathIndex = parseInt(parts[1]);
+        const roomIndex = parseInt(parts[2]);
+        const row = Math.floor(pathIndex / GRID_SIZE);
+        const col = pathIndex % GRID_SIZE;
+        return `Path (${row}, ${col})`;
+    }
+    return chainId;
 }
 
 // Show room picker modal
