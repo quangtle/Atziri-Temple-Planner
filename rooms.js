@@ -15,6 +15,7 @@ const ROOMS = [
     { id: 'generator', name: 'generator', label: '', image: 'resources/images/generator.png', hidden: false },
     { id: 'flesh_surgeon', name: 'flesh surgeon', label: '', image: 'resources/images/flesh_surgeon.png', hidden: false },
     { id: 'path', name: 'path', label: '', image: 'resources/images/path.png', hidden: false },
+    { id: 'architect', name: 'architect', label: '', image: 'resources/images/IconArchitect.webp', hidden: false },
 ];
 
 // Export for Node.js/Jest testing (won't affect browser usage)

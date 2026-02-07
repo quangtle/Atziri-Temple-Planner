@@ -253,6 +253,17 @@ function getChainExtensions(roomId) {
  * @returns {boolean} True if placement is valid
  */
 function isValidPlacement(index, selectedRoomId, gridData) {
+    // Architect can only be placed once and can be placed anywhere on the grid
+    if (selectedRoomId === 'architect') {
+        const architectExists = gridData.some(cell =>
+            cell !== null && cell.object.id === 'architect'
+        );
+        if (architectExists) {
+            return false;
+        }
+        return true;
+    }
+
     // Sacrificial chamber can only be placed once
     if (selectedRoomId === 'sacrificial_chamber') {
         const sacrificialChamberExists = gridData.some(cell =>

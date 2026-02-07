@@ -695,8 +695,19 @@ function isValidPlacement(index) {
     if (selectedRoom === null) {
         return false;
     }
-    
+
     const selectedRoomId = selectedRoom.id;
+
+    // Architect can only be placed once and can be placed anywhere on the grid
+    if (selectedRoomId === 'architect') {
+        const architectExists = gridData.some(cell =>
+            cell !== null && cell.object.id === 'architect'
+        );
+        if (architectExists) {
+            return false;
+        }
+        return true;
+    }
 
     if (selectedRoomId === 'sacrificial_chamber') {
         const sacrificialChamberExists = gridData.some(cell =>
@@ -1382,7 +1393,12 @@ function showRoomPickerModal(cellIndex, cellElement) {
     if (placeableRooms.length === 0) {
         roomPickerGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No compatible rooms available</p>';
     } else {
-        const { singleChainGroups, multiChainRooms } = groupRoomsByChain(cellIndex, placeableRooms);
+        // Separate special rooms (architect and path) from chain-based rooms
+        const specialRoomIds = ['architect', 'path'];
+        const specialRooms = placeableRooms.filter(room => specialRoomIds.includes(room.id));
+        const chainRooms = placeableRooms.filter(room => !specialRoomIds.includes(room.id));
+        
+        const { singleChainGroups, multiChainRooms } = groupRoomsByChain(cellIndex, chainRooms);
         
         const createRoomButton = (room) => {
             const btn = document.createElement('button');
@@ -1429,23 +1445,46 @@ function showRoomPickerModal(cellIndex, cellElement) {
                 roomPickerGrid.appendChild(groupDiv);
             }
         });
-        
+
         if (multiChainRooms.length > 0) {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'room-picker-group room-picker-group-multi';
-            
+
             const groupHeader = document.createElement('div');
             groupHeader.className = 'room-picker-group-header';
             groupHeader.textContent = 'Merge';
             groupDiv.appendChild(groupHeader);
-            
+
             const groupContent = document.createElement('div');
             groupContent.className = 'room-picker-group-content';
             multiChainRooms.forEach(room => {
                 groupContent.appendChild(createRoomButton(room));
             });
             groupDiv.appendChild(groupContent);
-            
+
+            roomPickerGrid.appendChild(groupDiv);
+        }
+
+        // Add special rooms group (architect and path)
+        if (specialRooms.length > 0) {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'room-picker-group room-picker-group-special';
+            groupDiv.style.backgroundColor = '#f5f5f5';
+            groupDiv.style.borderColor = '#9e9e9e';
+
+            const groupHeader = document.createElement('div');
+            groupHeader.className = 'room-picker-group-header';
+            groupHeader.textContent = 'Special';
+            groupHeader.style.borderBottomColor = '#9e9e9e';
+            groupDiv.appendChild(groupHeader);
+
+            const groupContent = document.createElement('div');
+            groupContent.className = 'room-picker-group-content';
+            specialRooms.forEach(room => {
+                groupContent.appendChild(createRoomButton(room));
+            });
+            groupDiv.appendChild(groupContent);
+
             roomPickerGrid.appendChild(groupDiv);
         }
     }
