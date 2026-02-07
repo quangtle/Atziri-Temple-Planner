@@ -1045,7 +1045,6 @@ function printRoomChain(cellIndex) {
     }
     
     const chainString = chain.join(' -> ');
-    console.log('Chain: ' + chainString);
     return chainString;
 }
 
@@ -1306,14 +1305,13 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
     placeableRooms.forEach(room => {
         const chains = roomToChainsMap.get(room);
         
-        if (!chains || chains.size === 0) {
-        } else if (chains.size === 1) {
+        if (chains && chains.size === 1) {
             const chainId = chains.values().next().value;
             if (!singleChainGroups.has(chainId)) {
                 singleChainGroups.set(chainId, []);
             }
             singleChainGroups.get(chainId).push(room);
-        } else {
+        } else if (chains && chains.size > 1) {
             multiChainRooms.push(room);
         }
     });
