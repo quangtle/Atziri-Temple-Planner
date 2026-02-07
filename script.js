@@ -1,6 +1,7 @@
 const GRID_SIZE = 9;
 const gridContainer = document.getElementById('grid');
 const objectGrid = document.getElementById('object-grid');
+const specialObjectGrid = document.getElementById('special-object-grid');
 const tooltip = document.getElementById('tooltip');
 const modifiersTable = document.getElementById('modifiers-table');
 const gridConnections = document.getElementById('grid-connections');
@@ -287,16 +288,20 @@ function hideTooltip() {
 // Create object selector grid
 function initializeObjectGrid() {
     objectGrid.innerHTML = '';
+    specialObjectGrid.innerHTML = '';
+
+    const specialRoomIds = ['architect', 'path'];
+
     ROOMS.forEach((obj) => {
         if (obj.hidden) {
             return;
         }
-        
+
         const btn = document.createElement('button');
         btn.className = 'object-btn';
         btn.dataset.object = obj.name;
         btn.title = obj.name;
-        
+
         const imgElement = document.createElement('img');
         imgElement.src = obj.image;
         imgElement.alt = obj.name;
@@ -304,15 +309,21 @@ function initializeObjectGrid() {
         imgElement.style.width = '100%';
         imgElement.style.height = '100%';
         btn.appendChild(imgElement);
-        
+
         if (selectedRoom && obj.id === selectedRoom.id) {
             btn.classList.add('selected');
         }
-        
+
         btn.addEventListener('click', () => selectObject(obj, btn));
         btn.addEventListener('mouseover', () => showTooltip(obj.name, obj.image, btn));
         btn.addEventListener('mouseout', () => hideTooltip());
-        objectGrid.appendChild(btn);
+
+        // Add to special grid or regular grid
+        if (specialRoomIds.includes(obj.id)) {
+            specialObjectGrid.appendChild(btn);
+        } else {
+            objectGrid.appendChild(btn);
+        }
     });
 }
 
