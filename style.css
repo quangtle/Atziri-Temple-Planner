@@ -106,7 +106,7 @@ h1 {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     padding: 10px;
-    background-color: rgba(249, 249, 249, 0.6);
+    background-color: rgba(68, 41, 126, 0.332);
     border-radius: 8px;
     border: 2px solid #ddd;
 }
@@ -115,7 +115,7 @@ h1 {
     padding: 8px;
     font-size: 20px;
     border: 2px solid #ccc;
-    background-color: white;
+    background-color: rgba(105, 37, 87, 0.429);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
