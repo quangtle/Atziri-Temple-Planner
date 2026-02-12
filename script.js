@@ -1396,14 +1396,14 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
 
 // Chain color palette
 const CHAIN_COLORS = [
-    { bg: '#e3f2fd', border: '#2196f3', header: '#1565c0' },
-    { bg: '#f3e5f5', border: '#9c27b0', header: '#7b1fa2' },
-    { bg: '#e8f5e9', border: '#4caf50', header: '#2e7d32' },
-    { bg: '#fff3e0', border: '#ff9800', header: '#e65100' },
-    { bg: '#fce4ec', border: '#e91e63', header: '#c2185b' },
-    { bg: '#e0f7fa', border: '#00bcd4', header: '#00838f' },
-    { bg: '#fff8e1', border: '#ffc107', header: '#ff8f00' },
-    { bg: '#f1f8e9', border: '#8bc34a', header: '#558b2f' },
+    { bg: '#e3f2fd80', border: '#2196f380', header: '#1565c080' },
+    { bg: '#f3e5f580', border: '#9c27b080', header: '#7b1fa280' },
+    { bg: '#e8f5e980', border: '#4caf5080', header: '#2e7d3280' },
+    { bg: '#fff3e080', border: '#ff980080', header: '#e6510080' },
+    { bg: '#fce4ec80', border: '#e91e6380', header: '#c2185b80' },
+    { bg: '#e0f7fa80', border: '#00bcd480', header: '#00838f80' },
+    { bg: '#fff8e180', border: '#ffc10780', header: '#ff8f0080' },
+    { bg: '#f1f8e980', border: '#8bc34a80', header: '#558b2f80' },
 ];
 
 const chainColorMap = new Map();
