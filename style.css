@@ -173,20 +173,20 @@ h1 {
 }
 
 .cell {
-     width: 75px;
-     height: 75px;
-     background-color: #f5f5f5;
-     border: 1px solid #ccc;
-     cursor: pointer;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     font-size: 14px;
-     transition: all 0.2s ease;
-     border-radius: 4px;
-     user-select: none;
-     position: relative;
- }
+    width: 75px;
+    height: 75px;
+    background-color: #f5f5f5;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    user-select: none;
+    position: relative;
+}
 
 .cell img {
     transform: rotate(-45deg);
@@ -229,6 +229,46 @@ h1 {
     pointer-events: none;
 }
 
+/* Atziri room - positioned outside the grid adjacent to cell 4 */
+.atziri-room {
+    position: absolute;
+    width: 75px;
+    height: 75px;
+    background: linear-gradient(135deg, #4a0e4e, #8b1a1a);
+    border: 3px solid #ffd700;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 10px rgba(255, 215, 0, 0.1);
+    overflow: visible;
+    transform: rotate(45deg) scale(0.625);
+}
+
+.atziri-room img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+    transform: rotate(-45deg);
+}
+
+.atziri-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+
 .tooltip {
     position: fixed;
     background-color: #333;
@@ -246,8 +286,8 @@ h1 {
 }
 
 .tooltip.visible {
-     opacity: 1;
- }
+    opacity: 1;
+}
 
 /* Tooltip container styles */
 .tooltip-container {
@@ -312,18 +352,18 @@ h1 {
 }
 
 .level-indicator {
-     position: absolute;
-     top: 20%;
-     right: 2px;
-     transform: translateY(-50%) rotate(-45deg);
-     background-color: rgba(0, 0, 0, 0.7);
-     color: white;
-     font-size: 16px;
-     font-weight: bold;
-     padding: 1px 2px;
-     border-radius: 2px;
-     font-family: 'Arial', sans-serif;
- }
+    position: absolute;
+    top: 20%;
+    right: 2px;
+    transform: translateY(-50%) rotate(-45deg);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-family: 'Arial', sans-serif;
+}
 
 .modifiers-section {
     margin-top: 20px;

@@ -23,7 +23,7 @@ gridData[LOCKED_CELL_INDEX] = { object: ROOMS.find(o => o.id === 'path'), level:
 // Accumulate modifiers from all placed objects
 function accumulateModifiers() {
     const accumulated = {};
-    
+
     gridData.forEach(cell => {
         if (cell !== null) {
             const objectModifiers = MODIFIERS[cell.object.id];
@@ -37,7 +37,7 @@ function accumulateModifiers() {
             }
         }
     });
-    
+
     return accumulated;
 }
 
@@ -45,37 +45,37 @@ function accumulateModifiers() {
 function updateModifiersDisplay() {
     const accumulated = accumulateModifiers();
     modifiersTable.innerHTML = '';
-    
+
     if (Object.keys(accumulated).length === 0) {
         modifiersTable.innerHTML = '<p style="text-align: center; color: #999; margin: 10px 0;">No modifiers</p>';
         return;
     }
-    
+
     const container = document.createElement('div');
     container.className = 'modifiers-list';
-    
+
     Object.entries(accumulated).forEach(([name, value]) => {
         const modifierItem = document.createElement('p');
         modifierItem.className = 'modifier-item';
-        
+
         const parts = name.split('%');
         modifierItem.innerHTML = parts[0] + '<strong>' + value + '%</strong>' + parts[1];
-        
+
         container.appendChild(modifierItem);
     });
-    
+
     modifiersTable.appendChild(container);
 }
 
 // Show tooltip
 function showTooltip(objectName, objectImage, element) {
     tooltip.innerHTML = '';
-    
+
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
     container.style.gap = '8px';
-    
+
     const img = document.createElement('img');
     img.src = objectImage;
     img.alt = objectName;
@@ -83,13 +83,13 @@ function showTooltip(objectName, objectImage, element) {
     img.style.height = '32px';
     img.style.borderRadius = '4px';
     container.appendChild(img);
-    
+
     const text = document.createElement('span');
     text.textContent = objectName;
     container.appendChild(text);
-    
+
     tooltip.appendChild(container);
-    
+
     const rect = element.getBoundingClientRect();
     tooltip.style.top = (rect.top - 10) + 'px';
     tooltip.style.left = (rect.right + 5) + 'px';
@@ -99,20 +99,20 @@ function showTooltip(objectName, objectImage, element) {
 // Get list of rooms that can be placed at a given index
 function getPlaceableRooms(index) {
     const placeableRooms = [];
-    
+
     ROOMS.forEach(room => {
         if (room.hidden) return;
-        
+
         const originalRoom = selectedRoom;
         selectedRoom = room;
         const isValid = isValidPlacement(index);
         selectedRoom = originalRoom;
-        
+
         if (isValid) {
             placeableRooms.push(room);
         }
     });
-    
+
     return placeableRooms;
 }
 
@@ -138,15 +138,15 @@ function canBePlacedAdjacent(roomId1, roomId2) {
 function getRoomsThatUpgrade(roomId) {
     const upgradeRule = UPGRADE_RULES[roomId];
     if (!upgradeRule) return [];
-    
+
     let upgradingRooms = [];
-    
+
     if (upgradeRule.type === 'list' && Array.isArray(upgradeRule.upgradedBy)) {
         upgradingRooms = upgradeRule.upgradedBy;
     } else if (upgradeRule.type === 'count' && Array.isArray(upgradeRule.objectIds)) {
         upgradingRooms = upgradeRule.objectIds;
     }
-    
+
     // Filter to only include rooms that can be placed adjacent according to placement rules
     return upgradingRooms.filter(upRoomId => canBePlacedAdjacent(roomId, upRoomId));
 }
@@ -154,7 +154,7 @@ function getRoomsThatUpgrade(roomId) {
 // Get rooms that this room can upgrade (reverse lookup in UPGRADE_RULES), filtered by placement rules
 function getRoomsThisUpgrades(roomId) {
     const roomsItUpgrades = [];
-    
+
     for (const [targetRoomId, rule] of Object.entries(UPGRADE_RULES)) {
         if (rule.type === 'list' && Array.isArray(rule.upgradedBy)) {
             if (rule.upgradedBy.includes(roomId)) {
@@ -172,108 +172,108 @@ function getRoomsThisUpgrades(roomId) {
             }
         }
     }
-    
+
     return roomsItUpgrades;
 }
 
 // Show tooltip with upgrade information for placed rooms
 function showPlacedRoomTooltip(objectName, objectImage, element, roomId) {
     tooltip.innerHTML = '';
-    
+
     const container = document.createElement('div');
     container.className = 'tooltip-container';
-    
+
     // Room header with image and name
     const header = document.createElement('div');
     header.className = 'tooltip-header';
-    
+
     const img = document.createElement('img');
     img.src = objectImage;
     img.alt = objectName;
     img.className = 'tooltip-room-image';
     header.appendChild(img);
-    
+
     const text = document.createElement('span');
     text.className = 'tooltip-room-name';
     text.textContent = objectName;
     header.appendChild(text);
-    
+
     container.appendChild(header);
-    
+
     // Get upgrade relationships
     const upgradedBy = getRoomsThatUpgrade(roomId);
     const upgrades = getRoomsThisUpgrades(roomId);
-    
+
     // Show rooms that upgrade this room
     if (upgradedBy.length > 0) {
         const upgradeBySection = document.createElement('div');
         upgradeBySection.className = 'tooltip-section';
-        
+
         const upgradeByLabel = document.createElement('div');
         upgradeByLabel.className = 'tooltip-section-label';
         upgradeByLabel.textContent = 'Upgraded by:';
         upgradeBySection.appendChild(upgradeByLabel);
-        
+
         const upgradeByList = document.createElement('div');
         upgradeByList.className = 'tooltip-room-list';
-        
+
         upgradedBy.forEach(upRoomId => {
             const roomItem = document.createElement('div');
             roomItem.className = 'tooltip-room-item';
-            
+
             const roomImg = document.createElement('img');
             roomImg.src = getRoomImage(upRoomId);
             roomImg.alt = getRoomDisplayName(upRoomId);
             roomImg.className = 'tooltip-small-image';
             roomItem.appendChild(roomImg);
-            
+
             const roomName = document.createElement('span');
             roomName.textContent = getRoomDisplayName(upRoomId);
             roomItem.appendChild(roomName);
-            
+
             upgradeByList.appendChild(roomItem);
         });
-        
+
         upgradeBySection.appendChild(upgradeByList);
         container.appendChild(upgradeBySection);
     }
-    
+
     // Show rooms this room upgrades
     if (upgrades.length > 0) {
         const upgradesSection = document.createElement('div');
         upgradesSection.className = 'tooltip-section';
-        
+
         const upgradesLabel = document.createElement('div');
         upgradesLabel.className = 'tooltip-section-label';
         upgradesLabel.textContent = 'Upgrades:';
         upgradesSection.appendChild(upgradesLabel);
-        
+
         const upgradesList = document.createElement('div');
         upgradesList.className = 'tooltip-room-list';
-        
+
         upgrades.forEach(upRoomId => {
             const roomItem = document.createElement('div');
             roomItem.className = 'tooltip-room-item';
-            
+
             const roomImg = document.createElement('img');
             roomImg.src = getRoomImage(upRoomId);
             roomImg.alt = getRoomDisplayName(upRoomId);
             roomImg.className = 'tooltip-small-image';
             roomItem.appendChild(roomImg);
-            
+
             const roomName = document.createElement('span');
             roomName.textContent = getRoomDisplayName(upRoomId);
             roomItem.appendChild(roomName);
-            
+
             upgradesList.appendChild(roomItem);
         });
-        
+
         upgradesSection.appendChild(upgradesList);
         container.appendChild(upgradesSection);
     }
-    
+
     tooltip.appendChild(container);
-    
+
     const rect = element.getBoundingClientRect();
     tooltip.style.top = (rect.top - 10) + 'px';
     tooltip.style.left = (rect.right + 5) + 'px';
@@ -330,7 +330,7 @@ function initializeObjectGrid() {
 // Select object from grid
 function selectObject(obj, btnElement) {
     selectedRoom = obj;
-    
+
     document.querySelectorAll('.object-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
@@ -341,29 +341,29 @@ function selectObject(obj, btnElement) {
 function getAdjacentIndices(index) {
     const row = Math.floor(index / GRID_SIZE);
     const col = index % GRID_SIZE;
-    
+
     const adjacentIndices = [];
-    
+
     // Up
     if (row > 0) {
         adjacentIndices.push(index - GRID_SIZE);
     }
-    
+
     // Down
     if (row < GRID_SIZE - 1) {
         adjacentIndices.push(index + GRID_SIZE);
     }
-    
+
     // Left
     if (col > 0) {
         adjacentIndices.push(index - 1);
     }
-    
+
     // Right
     if (col < GRID_SIZE - 1) {
         adjacentIndices.push(index + 1);
     }
-    
+
     return adjacentIndices;
 }
 
@@ -372,31 +372,31 @@ function applyConversions(index) {
     if (gridData[index] === null) {
         return;
     }
-    
+
     const placedObjectId = gridData[index].object.id;
     const adjacentIndices = getAdjacentIndices(index);
     const conversionRule = CONVERSION_RULES[placedObjectId];
-    
+
     // Placed room converts adjacent rooms
     if (conversionRule) {
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const convertToId = conversionRule[adjacentObjectId];
-                
+
                 if (convertToId) {
                     convertObject(adjIndex, convertToId, placedObjectId);
                 }
             }
         });
     }
-    
+
     // Adjacent rooms convert the placed room
     adjacentIndices.forEach(adjIndex => {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
             const adjacentConversionRule = CONVERSION_RULES[adjacentObjectId];
-            
+
             if (adjacentConversionRule && adjacentConversionRule[placedObjectId]) {
                 const convertToId = adjacentConversionRule[placedObjectId];
                 convertObject(index, convertToId, adjacentObjectId);
@@ -464,32 +464,32 @@ function applyUpgrades(index) {
     if (gridData[index] === null) {
         return;
     }
-    
+
     const placedObject = gridData[index].object;
     const adjacentIndices = getAdjacentIndices(index);
-    
+
     // Don't apply upgrades to rooms that were just converted - they keep their original upgrade state
     if (gridData[index].convertedBy) {
         return;
     }
-    
+
     gridData[index].level = 1;
     gridData[index].upgraded = false;
     gridData[index].upgradedBy = [];  // Reset upgradedBy tracking
-    
+
     const upgradeRule = UPGRADE_RULES[placedObject.id];
-    
-        if (upgradeRule) {
+
+    if (upgradeRule) {
         if (upgradeRule.type === 'count') {
             let count = 0;
             const objectIdsToCount = upgradeRule.objectIds || upgradeRule.upgradedBy;
-            
+
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null && objectIdsToCount.includes(gridData[adjIndex].object.id)) {
                     count++;
                 }
             });
-            
+
             if (count > 0) {
                 const maxLevel = upgradeRule.maxLevel || 3;
                 gridData[index].level = Math.min(count, maxLevel);
@@ -501,7 +501,7 @@ function applyUpgrades(index) {
             adjacentIndices.forEach(adjIndex => {
                 if (gridData[adjIndex] !== null) {
                     const adjacentObjectId = gridData[adjIndex].object.id;
-                    
+
                     // Only apply upgrade if this room type hasn't been used yet
                     if (upgradeRule.upgradedBy.includes(adjacentObjectId) && !usedUpgradeTypes.has(adjacentObjectId)) {
                         gridData[index].level += 1;
@@ -516,7 +516,7 @@ function applyUpgrades(index) {
             }
         }
     }
-    
+
     const cell = document.querySelector(`[data-index="${index}"]`);
     if (cell) {
         const levelIndicator = cell.querySelector('.level-indicator');
@@ -531,7 +531,7 @@ function getChainExtensions(roomId) {
     if (roomId === 'path') {
         return Object.keys(PLACEMENT_RULES).filter(id => id !== 'path');
     }
-    
+
     const allowedRooms = PLACEMENT_RULES[roomId] || [];
     return allowedRooms.filter(id => id !== 'path');
 }
@@ -539,27 +539,27 @@ function getChainExtensions(roomId) {
 // Check if converting a room would break its existing chain connections
 function wouldConversionBreakChain(roomIndex, convertedToId) {
     if (gridData[roomIndex] === null) return false;
-    
+
     const adjacentIndices = getAdjacentIndices(roomIndex);
     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
-    
+
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjRoomId = gridData[adjIndex].object.id;
             const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
-            
+
             if (!convertedAllowedRooms.includes(adjRoomId) || !adjAllowedRooms.includes(convertedToId)) {
                 return true;
             }
         }
-        
+
         if (adjIndex === LOCKED_CELL_INDEX) {
             if (!convertedAllowedRooms.includes('path')) {
                 return true;
             }
         }
     }
-    
+
     return false;
 }
 
@@ -569,14 +569,14 @@ function wouldPlacementBreakAnyChain(index, roomId) {
     if (!conversionRule) {
         return false;
     }
-    
+
     const adjacentIndices = getAdjacentIndices(index);
-    
+
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
             const convertedToId = conversionRule[adjacentObjectId];
-            
+
             if (convertedToId) {
                 if (wouldConversionBreakChain(adjIndex, convertedToId)) {
                     return true;
@@ -584,22 +584,22 @@ function wouldPlacementBreakAnyChain(index, roomId) {
             }
         }
     }
-    
+
     return false;
 }
 
 // Check if placing a room would try to upgrade an adjacent room that is already at max level
 function wouldUpgradeExceedMaxLevel(index, roomId) {
     const adjacentIndices = getAdjacentIndices(index);
-    
+
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
             const upgradeRule = UPGRADE_RULES[adjacentObjectId];
-            
+
             if (upgradeRule) {
                 const currentLevel = gridData[adjIndex].level || 1;
-                
+
                 if (upgradeRule.type === 'count') {
                     // Check if this room type can upgrade the adjacent room
                     const objectIdsToCount = upgradeRule.objectIds || upgradeRule.upgradedBy || [];
@@ -623,7 +623,7 @@ function wouldUpgradeExceedMaxLevel(index, roomId) {
             }
         }
     }
-    
+
     return false;
 }
 
@@ -631,13 +631,13 @@ function wouldUpgradeExceedMaxLevel(index, roomId) {
 function getValidChainExtensions(index) {
     const adjacentIndices = getAdjacentIndices(index);
     const validRooms = new Set();
-    
+
     // Check if there's an adjacent path (for generator placement rule)
-    const hasAdjacentPath = adjacentIndices.some(adjIndex => 
-        adjIndex === LOCKED_CELL_INDEX || 
+    const hasAdjacentPath = adjacentIndices.some(adjIndex =>
+        adjIndex === LOCKED_CELL_INDEX ||
         (gridData[adjIndex] !== null && gridData[adjIndex].object.id === 'path')
     );
-    
+
     for (const adjIndex of adjacentIndices) {
         if (adjIndex === LOCKED_CELL_INDEX || (gridData[adjIndex] !== null)) {
             let roomId;
@@ -646,11 +646,11 @@ function getValidChainExtensions(index) {
             } else {
                 roomId = gridData[adjIndex].object.id;
             }
-            
+
             // Add rooms that can directly extend from the adjacent room
             const extensions = getChainExtensions(roomId);
             extensions.forEach(ext => validRooms.add(ext));
-            
+
             if (adjIndex !== LOCKED_CELL_INDEX) {
                 // Add rooms that would convert the adjacent room (placed room converts adjacent)
                 for (const [convertingRoomId, conversionTargets] of Object.entries(CONVERSION_RULES)) {
@@ -658,13 +658,13 @@ function getValidChainExtensions(index) {
                         const convertedToId = conversionTargets[roomId];
                         const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
                         const convertingAllowedRooms = PLACEMENT_RULES[convertingRoomId] || [];
-                        
+
                         if (convertedAllowedRooms.includes(convertingRoomId) && convertingAllowedRooms.includes(convertedToId)) {
                             validRooms.add(convertingRoomId);
                         }
                     }
                 }
-                
+
                 // Add rooms that would BE CONVERTED BY the adjacent room (adjacent room converts placed room)
                 const adjConversionRule = CONVERSION_RULES[roomId];
                 if (adjConversionRule) {
@@ -680,16 +680,16 @@ function getValidChainExtensions(index) {
             }
         }
     }
-    
+
     if (hasAdjacentPath) {
         validRooms.add('path');
     }
-    
+
     // Generator can only be placed adjacent to a path
     if (!hasAdjacentPath) {
         validRooms.delete('generator');
     }
-    
+
     // Filter out rooms that would break any chain when placed
     const safeRooms = new Set();
     for (const roomId of validRooms) {
@@ -697,7 +697,7 @@ function getValidChainExtensions(index) {
             safeRooms.add(roomId);
         }
     }
-    
+
     return safeRooms;
 }
 
@@ -764,7 +764,7 @@ function isValidPlacement(index) {
     // Find the chain this placement would join
     // by looking for any adjacent path or tracing back from adjacent rooms
     let targetChainPathIndex = null;
-    
+
     for (const adjIndex of adjacentIndices) {
         if (adjIndex === LOCKED_CELL_INDEX) {
             // Adjacent to locked path
@@ -776,17 +776,17 @@ function isValidPlacement(index) {
             break;
         }
     }
-    
+
     // If not directly adjacent to a path, find which chain(s) we can actually connect to
     if (targetChainPathIndex === null) {
         // Build a map of chains we can connect to
         const connectableChains = new Set();
-        
+
         for (const adjIndex of adjacentIndices) {
             if (gridData[adjIndex] !== null && gridData[adjIndex].object.id !== 'path') {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const adjChainTrace = traceChainToPath(adjIndex);
-                
+
                 if (adjChainTrace !== null) {
                     // Check if selectedRoom can connect to this adjacent room
                     const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
@@ -794,14 +794,14 @@ function isValidPlacement(index) {
                         // Can connect to this room, so we can join its chain
                         connectableChains.add(adjChainTrace.pathIndex);
                     }
-                    
+
                     // Also check conversion rules
                     const selectedConversionRule = CONVERSION_RULES[selectedRoomId];
                     if (selectedConversionRule && selectedConversionRule[adjacentObjectId]) {
                         // Selected room converts adjacent room, so we can join this chain
                         connectableChains.add(adjChainTrace.pathIndex);
                     }
-                    
+
                     const adjConversionRule = CONVERSION_RULES[adjacentObjectId];
                     if (adjConversionRule && adjConversionRule[selectedRoomId]) {
                         // Adjacent room converts selected room, so we can join this chain
@@ -810,23 +810,23 @@ function isValidPlacement(index) {
                 }
             }
         }
-        
+
         // Pick the first connectable chain we found
         if (connectableChains.size > 0) {
             targetChainPathIndex = connectableChains.values().next().value;
         }
     }
-    
+
     // Validate adjacent rooms
     for (const adjIndex of adjacentIndices) {
         if (gridData[adjIndex] !== null) {
             const adjacentObjectId = gridData[adjIndex].object.id;
-            
+
             // Always skip validation for path cells (they can connect to anything)
             if (adjacentObjectId === 'path') {
                 continue;
             }
-            
+
             // Check if this adjacent room is in the same chain as our target
             const adjChainTrace = traceChainToPath(adjIndex);
             if (adjChainTrace !== null && targetChainPathIndex !== null) {
@@ -835,7 +835,7 @@ function isValidPlacement(index) {
                     continue;
                 }
             }
-            
+
             // Validate connection for rooms in the same chain
             const adjAllowedRooms = PLACEMENT_RULES[adjacentObjectId] || [];
 
@@ -925,12 +925,18 @@ function isValidPlacement(index) {
 // Create grid cells
 function initializeGrid() {
     gridContainer.innerHTML = '';
-    
+
+    // Remove any existing Atziri room element
+    const existingAtziri = document.querySelector('.atziri-room');
+    if (existingAtziri) {
+        existingAtziri.remove();
+    }
+
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
         cell.dataset.index = i;
-        
+
         if (i === LOCKED_CELL_INDEX) {
             cell.classList.add('locked');
             const imgElement = document.createElement('img');
@@ -947,16 +953,16 @@ function initializeGrid() {
             imgElement.style.width = '100%';
             imgElement.style.height = '100%';
             cell.appendChild(imgElement);
-            
+
             const levelIndicator = document.createElement('div');
             levelIndicator.className = 'level-indicator';
             levelIndicator.textContent = toRomanNumeral(gridData[i].level);
             if (gridData[i].level > 0) {
                 cell.appendChild(levelIndicator);
             }
-            
+
             cell.classList.add('placed');
-            
+
             applyChainColorToCell(i, cell);
         } else {
             // Show cell number on empty cells
@@ -965,7 +971,7 @@ function initializeGrid() {
             cellNumber.textContent = i;
             cell.appendChild(cellNumber);
         }
-        
+
         if (i !== LOCKED_CELL_INDEX) {
             cell.addEventListener('click', () => toggleCell(i, cell));
             cell.addEventListener('contextmenu', (e) => {
@@ -981,6 +987,53 @@ function initializeGrid() {
         }
         gridContainer.appendChild(cell);
     }
+
+    // Add Atziri room outside the grid, adjacent to cell 4
+    createAtziriRoom();
+}
+
+// Create and position the Atziri room adjacent to cell 4
+function createAtziriRoom() {
+    const gridWrapper = document.querySelector('.grid-wrapper');
+
+    const atziriRoom = document.createElement('div');
+    atziriRoom.className = 'atziri-room';
+    atziriRoom.title = 'Atziri';
+
+    const imgElement = document.createElement('img');
+    imgElement.src = 'resources/images/IconAtziri.webp';
+    imgElement.alt = 'Atziri';
+    atziriRoom.appendChild(imgElement);
+
+    gridWrapper.appendChild(atziriRoom);
+
+    // Position after a small delay to ensure the grid is rendered
+    requestAnimationFrame(() => {
+        positionAtziriRoom();
+    });
+}
+
+// Position the Atziri room adjacent to cell 5
+function positionAtziriRoom() {
+    const cell5 = document.querySelector('[data-index="5"]');
+    const gridWrapper = document.querySelector('.grid-wrapper');
+    const atziriRoom = document.querySelector('.atziri-room');
+
+    if (!cell5 || !gridWrapper || !atziriRoom) return;
+
+    const cell5Rect = cell5.getBoundingClientRect();
+    const wrapperRect = gridWrapper.getBoundingClientRect();
+
+    // Position the Atziri room above cell 5 (in screen space)
+    const cellCenterX = cell5Rect.left - wrapperRect.left + cell5Rect.width / 2;
+    const cellTopY = cell5Rect.top - wrapperRect.top;
+
+    const atziriWidth = atziriRoom.offsetWidth;
+    const atziriHeight = atziriRoom.offsetHeight;
+
+    // Place it directly touching cell 5, no gap
+    atziriRoom.style.left = (cellCenterX - atziriWidth / 2) + 'px';
+    atziriRoom.style.top = (cellTopY - atziriHeight) + 'px';
 }
 
 // Apply chain color to a cell based on its root path
@@ -988,7 +1041,7 @@ function applyChainColorToCell(index, cellElement) {
     if (gridData[index] && gridData[index].object.id === 'path') {
         return;
     }
-    
+
     const traceResult = traceChainToPath(index);
     if (traceResult !== null) {
         const chainId = `chain_${traceResult.pathIndex}_${traceResult.roomIndex}`;
@@ -1003,36 +1056,36 @@ function printRoomChain(cellIndex) {
     const chain = [];
     let currentIndex = cellIndex;
     const visited = new Set();
-    
+
     // Start from the placed room and trace back to the path
     while (currentIndex !== null && !visited.has(currentIndex)) {
         visited.add(currentIndex);
-        
+
         if (gridData[currentIndex] === null) {
             break;
         }
-        
+
         const roomId = gridData[currentIndex].object.id;
         const displayName = gridData[currentIndex].object.name;
         chain.unshift(`${displayName}(${currentIndex})`); // Add to front with room number
-        
+
         // If we reached a path, stop
         if (roomId === 'path' || currentIndex === LOCKED_CELL_INDEX) {
             break;
         }
-        
+
         // Find the next room in the chain (trace backwards)
         const adjacentIndices = getAdjacentIndices(currentIndex);
         let foundNext = false;
-        
+
         for (const adjIndex of adjacentIndices) {
             if (visited.has(adjIndex) || gridData[adjIndex] === null) {
                 continue;
             }
-            
+
             const adjRoomId = gridData[adjIndex].object.id;
             const currentRoomId = roomId;
-            
+
             // Get the effective room ID (accounting for conversions)
             let effectiveCurrentRoomId = currentRoomId;
             if (gridData[currentIndex].convertedBy) {
@@ -1042,7 +1095,7 @@ function printRoomChain(cellIndex) {
                     effectiveCurrentRoomId = conversionRule[currentRoomId];
                 }
             }
-            
+
             // Get the effective adjacent room ID (accounting for conversions)
             let effectiveAdjRoomId = adjRoomId;
             if (gridData[adjIndex].convertedBy) {
@@ -1051,7 +1104,7 @@ function printRoomChain(cellIndex) {
                     effectiveAdjRoomId = conversionRule[adjRoomId];
                 }
             }
-            
+
             // Check if this adjacent room can connect to current room (using effective IDs)
             const adjAllowedRooms = PLACEMENT_RULES[effectiveAdjRoomId] || [];
             if (adjAllowedRooms.includes(effectiveCurrentRoomId)) {
@@ -1060,12 +1113,12 @@ function printRoomChain(cellIndex) {
                 break;
             }
         }
-        
+
         if (!foundNext) {
             break;
         }
     }
-    
+
     const chainString = chain.join(' -> ');
     return chainString;
 }
@@ -1078,18 +1131,18 @@ function toggleCell(index, cellElement) {
             showRoomPickerModal(index, cellElement);
             return;
         }
-        
+
         if (!isValidPlacement(index)) {
             return;
         }
-        
+
         const objectLevel = selectedRoom.id === 'path' ? 0 : 1;
-        
+
         gridData[index] = { object: selectedRoom, level: objectLevel, upgraded: false, convertedBy: null, upgradedBy: [] };
-        
+
         // Clear the cell number before placing the room
         cellElement.innerHTML = '';
-        
+
         const imgElement = document.createElement('img');
         imgElement.src = selectedRoom.image;
         imgElement.alt = selectedRoom.name;
@@ -1097,24 +1150,24 @@ function toggleCell(index, cellElement) {
         imgElement.style.width = '100%';
         imgElement.style.height = '100%';
         cellElement.appendChild(imgElement);
-        
+
         const levelIndicator = document.createElement('div');
         levelIndicator.className = 'level-indicator';
         levelIndicator.textContent = toRomanNumeral(objectLevel);
         if (objectLevel > 0) {
             cellElement.appendChild(levelIndicator);
         }
-        
+
         cellElement.classList.add('placed');
-        
+
         applyChainColorToCell(index, cellElement);
-        
+
         applyConversions(index);
-        
+
         printRoomChain(index);
-        
+
         applyUpgrades(index);
-        
+
         const adjacentIndices = getAdjacentIndices(index);
         adjacentIndices.forEach(adjIndex => {
             if (gridData[adjIndex] !== null) {
@@ -1145,7 +1198,7 @@ function toggleCell(index, cellElement) {
             }
         });
     }
-    
+
     updateModifiersDisplay();
     drawConnections();
 }
@@ -1200,33 +1253,33 @@ function traceChainToPath(startIndex, visited = new Set()) {
         return null;
     }
     visited.add(startIndex);
-    
+
     if (startIndex === LOCKED_CELL_INDEX) {
         return { pathIndex: LOCKED_CELL_INDEX, roomIndex: LOCKED_CELL_INDEX };
     }
-    
+
     if (gridData[startIndex] === null) {
         return null;
     }
-    
+
     if (gridData[startIndex].object.id === 'path') {
         return { pathIndex: startIndex, roomIndex: startIndex };
     }
-    
+
     const adjacentIndices = getAdjacentIndices(startIndex);
     const currentRoomId = gridData[startIndex].object.id;
-    
+
     for (const adjIndex of adjacentIndices) {
         if (adjIndex === LOCKED_CELL_INDEX) {
             return { pathIndex: LOCKED_CELL_INDEX, roomIndex: startIndex };
         }
-        
+
         if (gridData[adjIndex] === null) {
             continue;
         }
-        
+
         const adjRoomId = gridData[adjIndex].object.id;
-        
+
         const adjAllowedRooms = PLACEMENT_RULES[adjRoomId] || [];
         if (adjAllowedRooms.includes(currentRoomId)) {
             const result = traceChainToPath(adjIndex, visited);
@@ -1240,16 +1293,16 @@ function traceChainToPath(startIndex, visited = new Set()) {
             }
         }
     }
-    
+
     return null;
 }
 
 // Group rooms by which chain(s) they can extend from
 function groupRoomsByChain(cellIndex, placeableRooms) {
     const adjacentIndices = getAdjacentIndices(cellIndex);
-    
+
     const adjacentSources = [];
-    
+
     adjacentIndices.forEach(adjIndex => {
         if (adjIndex === LOCKED_CELL_INDEX) {
             adjacentSources.push({
@@ -1273,23 +1326,23 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             }
         }
     });
-    
+
     const roomToChainsMap = new Map();
-    
+
     placeableRooms.forEach(room => {
         const chainsForRoom = new Set();
-        
+
         adjacentSources.forEach(({ index: adjIndex, roomId, chainId, convertedBy }) => {
             // Skip if this room type is the one that converted the adjacent room
             if (convertedBy === room.id) {
                 return;
             }
-            
+
             const allowedRooms = PLACEMENT_RULES[roomId] || [];
             if (allowedRooms.includes(room.id)) {
                 chainsForRoom.add(chainId);
             }
-            
+
             if (adjIndex !== LOCKED_CELL_INDEX) {
                 // Case: placed room converts adjacent room
                 const conversionRule = CONVERSION_RULES[room.id];
@@ -1297,13 +1350,13 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
                     const convertedToId = conversionRule[roomId];
                     const convertedAllowedRooms = PLACEMENT_RULES[convertedToId] || [];
                     const roomAllowedRooms = PLACEMENT_RULES[room.id] || [];
-                    if (convertedAllowedRooms.includes(room.id) && 
+                    if (convertedAllowedRooms.includes(room.id) &&
                         roomAllowedRooms.includes(convertedToId) &&
                         !wouldConversionBreakChain(adjIndex, convertedToId)) {
                         chainsForRoom.add(chainId);
                     }
                 }
-                
+
                 // Case: adjacent room converts placed room
                 const adjConversionRule = CONVERSION_RULES[roomId];
                 if (adjConversionRule && adjConversionRule[room.id]) {
@@ -1315,18 +1368,18 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
                 }
             }
         });
-        
+
         if (chainsForRoom.size > 0) {
             roomToChainsMap.set(room, chainsForRoom);
         }
     });
-    
+
     const singleChainGroups = new Map();
     const multiChainRooms = [];
-    
+
     placeableRooms.forEach(room => {
         const chains = roomToChainsMap.get(room);
-        
+
         if (chains && chains.size === 1) {
             const chainId = chains.values().next().value;
             if (!singleChainGroups.has(chainId)) {
@@ -1337,7 +1390,7 @@ function groupRoomsByChain(cellIndex, placeableRooms) {
             multiChainRooms.push(room);
         }
     });
-    
+
     return { singleChainGroups, multiChainRooms };
 }
 
@@ -1398,9 +1451,9 @@ function showRoomPickerModal(cellIndex, cellElement) {
     const placeableRooms = getPlaceableRooms(cellIndex);
     const roomPickerGrid = document.getElementById('room-picker-grid');
     const modal = document.getElementById('room-picker-modal');
-    
+
     roomPickerGrid.innerHTML = '';
-    
+
     if (placeableRooms.length === 0) {
         roomPickerGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No compatible rooms available</p>';
     } else {
@@ -1408,51 +1461,51 @@ function showRoomPickerModal(cellIndex, cellElement) {
         const specialRoomIds = ['architect', 'path'];
         const specialRooms = placeableRooms.filter(room => specialRoomIds.includes(room.id));
         const chainRooms = placeableRooms.filter(room => !specialRoomIds.includes(room.id));
-        
+
         const { singleChainGroups, multiChainRooms } = groupRoomsByChain(cellIndex, chainRooms);
-        
+
         const createRoomButton = (room) => {
             const btn = document.createElement('button');
             btn.className = 'room-picker-btn';
             btn.title = room.name;
-            
+
             const img = document.createElement('img');
             img.src = room.image;
             img.alt = room.name;
             btn.appendChild(img);
-            
+
             btn.addEventListener('click', () => {
                 selectObject(room, document.querySelector(`[data-object="${room.name}"]`));
                 closeRoomPickerModal();
                 toggleCell(cellIndex, cellElement);
             });
-            
+
             return btn;
         };
-        
+
         singleChainGroups.forEach((rooms, rootPathIndex) => {
             if (rooms.length > 0) {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'room-picker-group';
-                
+
                 const chainColor = getChainColor(rootPathIndex);
                 groupDiv.style.backgroundColor = chainColor.bg;
                 groupDiv.style.borderColor = chainColor.border;
-                
+
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'room-picker-group-header';
                 groupHeader.textContent = getChainDisplayName(rootPathIndex);
                 groupHeader.style.borderBottomColor = chainColor.border;
                 groupHeader.style.color = getContrastingTextColor(chainColor.bg);
                 groupDiv.appendChild(groupHeader);
-                
+
                 const groupContent = document.createElement('div');
                 groupContent.className = 'room-picker-group-content';
                 rooms.forEach(room => {
                     groupContent.appendChild(createRoomButton(room));
                 });
                 groupDiv.appendChild(groupContent);
-                
+
                 roomPickerGrid.appendChild(groupDiv);
             }
         });
@@ -1499,7 +1552,7 @@ function showRoomPickerModal(cellIndex, cellElement) {
             roomPickerGrid.appendChild(groupDiv);
         }
     }
-    
+
     modal.classList.add('show');
 }
 
@@ -1521,11 +1574,11 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
     const cellElement = e.target.closest('.cell');
     const objectBtn = e.target.closest('.object-btn');
-    
+
     if (cellElement || objectBtn) {
         return;
     }
-    
+
     selectedRoom = null;
     document.querySelectorAll('.object-btn').forEach(btn => {
         btn.classList.remove('selected');
@@ -1535,21 +1588,21 @@ document.addEventListener('click', (e) => {
 // Draw connections between related rooms
 function drawConnections() {
     gridConnections.innerHTML = '';
-    
+
     const wrapper = gridConnections.parentElement;
     gridConnections.setAttribute('width', wrapper.offsetWidth);
     gridConnections.setAttribute('height', wrapper.offsetHeight);
-    
+
     gridData.forEach((cell, index) => {
         if (cell === null) return;
-        
+
         const adjacentIndices = getAdjacentIndices(index);
-        
+
         adjacentIndices.forEach(adjIndex => {
             if (index < adjIndex && gridData[adjIndex] !== null) {
                 const adjacentObjectId = gridData[adjIndex].object.id;
                 const currentObjectId = cell.object.id;
-                
+
                 const allowedRooms = PLACEMENT_RULES[currentObjectId] || [];
                 if (allowedRooms.includes(adjacentObjectId)) {
                     drawConnectionLine(index, adjIndex);
@@ -1563,37 +1616,37 @@ function drawConnections() {
 function drawConnectionLine(index1, index2) {
     const cell1 = document.querySelector(`[data-index="${index1}"]`);
     const cell2 = document.querySelector(`[data-index="${index2}"]`);
-    
+
     if (!cell1 || !cell2) return;
-    
+
     const rect1 = cell1.getBoundingClientRect();
     const rect2 = cell2.getBoundingClientRect();
     const wrapper = gridConnections.parentElement;
     const wrapperRect = wrapper.getBoundingClientRect();
-    
+
     const center1X = rect1.left - wrapperRect.left + rect1.width / 2;
     const center1Y = rect1.top - wrapperRect.top + rect1.height / 2;
     const center2X = rect2.left - wrapperRect.left + rect2.width / 2;
     const center2Y = rect2.top - wrapperRect.top + rect2.height / 2;
-    
+
     const dx = center2X - center1X;
     const dy = center2Y - center1Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (distance === 0) return;
-    
+
     const normX = dx / distance;
     const normY = dy / distance;
-    
+
     const cellWidth = rect1.width;
     const cellHeight = rect1.height;
     const radius = Math.max(cellWidth, cellHeight) / 2;
-    
+
     const x1 = center1X + normX * radius;
     const y1 = center1Y + normY * radius;
     const x2 = center2X - normX * radius;
     const y2 = center2Y - normY * radius;
-    
+
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x1);
     line.setAttribute('y1', y1);
@@ -1602,7 +1655,7 @@ function drawConnectionLine(index1, index2) {
     line.setAttribute('stroke', '#667eea');
     line.setAttribute('stroke-width', '6');
     line.setAttribute('opacity', '0.6');
-    
+
     gridConnections.appendChild(line);
 }
 
